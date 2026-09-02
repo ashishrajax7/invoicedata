@@ -5,6 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invoice & Order Summary Manager (All 3 Files Sync)</title>
     <!-- Tailwind CSS CDN -->
+    <script>
+        // Suppress Tailwind Play CDN production notice in browser console
+        (function() {
+            const _origWarn = console.warn;
+            console.warn = function(...args) {
+                if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) {
+                    return;
+                }
+                _origWarn.apply(console, args);
+            };
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -25,72 +37,73 @@
             }
         }
     </script>
-    <!-- Favicon & App Icons -->
-    <link rel="icon" type="image/png" href="/static/favicon.png?v=1">
-    <link rel="apple-touch-icon" href="/static/favicon.png?v=1">
+    <!-- Favicon & App Icons (Transparent PNG & Multi-size ICO) -->
+    <link rel="icon" type="image/png" sizes="64x64" href="/static/favicon.png?v=3">
+    <link rel="shortcut icon" href="/static/favicon.ico?v=3">
+    <link rel="apple-touch-icon" href="/static/favicon.png?v=3">
     <!-- FontAwesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="/static/style.css?t=1787544299">
+    <link rel="stylesheet" href="/static/style.css?t=1787546111">
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
 
     <!-- Top Navigation Header (Clean Modern White Layout) -->
-    <header class="bg-white text-slate-900 sticky top-0 z-40 shadow-xs border-b border-slate-200">
+    <header class="bg-white text-slate-900 sticky top-0 z-40 border-b border-slate-200/90 shadow-2xs">
         <div class="w-full px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4 overflow-x-auto">
             
-            <!-- Brand Title in Single Line -->
-            <div class="flex items-center space-x-3 shrink-0 whitespace-nowrap">
-                <img src="/static/favicon.png" alt="Logo" class="w-9 h-9 rounded-xl shadow-xs border border-slate-200 object-cover">
+            <!-- Brand Title in Single Line with Transparent User Icon -->
+            <div class="flex items-center space-x-2.5 shrink-0 whitespace-nowrap">
+                <img src="/static/icon.png?v=3" alt="App Logo" class="w-8 h-8 object-contain shrink-0">
                 <div class="flex items-center space-x-2">
-                    <span class="font-extrabold text-base sm:text-lg tracking-tight text-slate-900">Invoice & Summary Hub</span>
-                    <span class="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">3-in-1 Sync</span>
+                    <span class="font-bold text-base sm:text-lg tracking-tight bg-gradient-to-r from-indigo-700 via-purple-700 to-indigo-800 bg-clip-text text-transparent">Invoice & Summary Hub</span>
+                    <span class="text-[11px] bg-indigo-50 text-indigo-700 font-semibold px-2 py-0.5 rounded-md border border-indigo-200/80">3-in-1 Sync</span>
                 </div>
             </div>
 
             <!-- Right Action Buttons in Single Line -->
             <div class="flex items-center space-x-2 shrink-0 whitespace-nowrap">
                 <!-- Mode Switcher -->
-                <div class="flex items-center space-x-1.5 bg-slate-100/90 px-3 py-1.5 rounded-xl border border-slate-200 text-xs">
+                <div class="flex items-center space-x-1.5 bg-slate-100/90 px-3 py-1.5 rounded-lg border border-slate-200 text-xs">
                     <i class="fa-solid fa-layer-group text-indigo-600 text-xs"></i>
-                    <span class="text-slate-500 font-medium">Mode:</span>
-                    <select id="fileSelector" onchange="switchExcelFile(this.value)" class="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer pr-1">
+                    <span class="text-indigo-700 font-semibold">Mode:</span>
+                    <select id="fileSelector" onchange="switchExcelFile(this.value)" class="bg-transparent font-bold text-slate-900 focus:outline-none cursor-pointer pr-1">
                         <!-- Populated by JS -->
                     </select>
                 </div>
 
-                <div id="unsavedBadge" class="hidden items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-300 animate-pulse">
+                <div id="unsavedBadge" class="hidden items-center space-x-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-300 animate-pulse">
                     <i class="fa-solid fa-circle-exclamation text-[10px]"></i>
                     <span>Unsaved</span>
                 </div>
 
                 <!-- Clear All Button (Red) -->
-                <button onclick="clearAllUploadedData()" class="flex items-center space-x-1.5 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow-xs" title="Clear all uploaded Excel data and start fresh">
+                <button onclick="clearAllUploadedData()" class="flex items-center space-x-1.5 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition shadow-2xs" title="Clear all uploaded Excel data and start fresh">
                     <i class="fa-solid fa-trash-can text-xs"></i>
                     <span>Clear All</span>
                 </button>
 
                 <!-- Reset Status Button -->
-                <button onclick="resetAllStatuses()" class="flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 transition active:scale-95" title="Reset all checked DONE/NOT status back to Pending">
-                    <i class="fa-solid fa-rotate-left text-xs text-amber-500"></i>
+                <button onclick="resetAllStatuses()" class="flex items-center space-x-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition active:scale-95 shadow-2xs" title="Reset all checked DONE/NOT status back to Pending">
+                    <i class="fa-solid fa-rotate-left text-xs text-amber-600"></i>
                     <span>Reset Status</span>
                 </button>
 
                 <!-- Save All Button (Green) -->
-                <button onclick="saveAllChanges()" id="saveBtn" class="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition text-white font-bold px-4 py-1.5 rounded-xl text-xs shadow-sm shadow-emerald-600/20">
+                <button onclick="saveAllChanges()" id="saveBtn" class="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition text-white font-semibold px-4 py-1.5 rounded-lg text-xs shadow-2xs">
                     <i class="fa-solid fa-floppy-disk"></i>
                     <span>Save All to Excel</span>
                 </button>
 
                 <!-- Export Button -->
-                <button onclick="exportExcelFile()" class="flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 transition active:scale-95" title="Download Excel with colors">
-                    <i class="fa-solid fa-download text-xs text-emerald-600"></i>
+                <button onclick="exportExcelFile()" class="flex items-center space-x-1.5 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition active:scale-95 shadow-2xs" title="Download Excel with colors">
+                    <i class="fa-solid fa-arrow-down-to-bracket text-xs text-sky-600"></i>
                     <span>Export</span>
                 </button>
 
                 <!-- Print Button -->
-                <button onclick="printSummaryReport()" class="flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 transition active:scale-95" title="Print Report">
+                <button onclick="printSummaryReport()" class="flex items-center space-x-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition active:scale-95 shadow-2xs" title="Print Report">
                     <i class="fa-solid fa-print text-xs text-indigo-600"></i>
                     <span>Print</span>
                 </button>
@@ -101,257 +114,475 @@
     <!-- Main Content Area (Extra Wide Full Fluid Layout) -->
     <main class="flex-1 w-full max-w-[98%] 2xl:max-w-[97%] mx-auto px-2 sm:px-4 lg:px-6 py-5 space-y-5">
 
-        <!-- Top Sheet Overview Quick Cards (AJIO, Myntra, Flipkart) -->
+        <!-- Top Sheet Overview Quick Cards (AJIO, Myntra, Flipkart with Colored Text & Badges) -->
         <section class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-            <!-- Sheet 1: AJIO -->
-            <div onclick="switchTab('shortlist')" class="cursor-pointer bg-white p-5 rounded-2xl border border-slate-200 hover:border-purple-400 shadow-xs hover:shadow-md transition-all group">
-                <div class="flex items-center justify-between text-slate-500 mb-1.5">
-                    <span class="text-sm font-bold uppercase tracking-wider text-slate-700 group-hover:text-purple-600 flex items-center gap-1.5">
-                        <i class="fa-solid fa-bag-shopping text-purple-600"></i> AJIO
+            <!-- Sheet 1: AJIO (Purple Accent Theme) -->
+            <div onclick="switchTab('invoicesummary'); switchSummarySubTab('shortlist');" class="cursor-pointer bg-white p-5 rounded-xl border border-purple-200/90 hover:border-purple-400 shadow-2xs hover:shadow-xs transition-all group">
+                <div class="flex items-center justify-between text-slate-500 mb-2">
+                    <span class="text-xs font-bold text-purple-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-bag-shopping text-purple-600 text-xs"></i> AJIO
                     </span>
-                    <span class="text-xs bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full font-bold">Short List</span>
+                    <span class="text-[11px] bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-md font-bold border border-purple-200">Short List</span>
                 </div>
-                <div class="text-3xl sm:text-4xl font-black text-slate-800" id="kpiShortlistCount">0</div>
-                <div class="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
-                    <span id="kpiShortlistDone" class="text-emerald-600 font-bold">0 Done</span>
-                    <span id="kpiShortlistPending" class="text-slate-400 font-medium">0 Pending</span>
+                <div class="flex items-baseline justify-between">
+                    <div class="text-3xl font-bold text-purple-700 tracking-tight" id="kpiShortlistCount">0</div>
+                    <div class="text-xs flex items-center gap-1.5">
+                        <span id="kpiShortlistDone" class="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">0 Done</span>
+                        <span class="text-slate-300">•</span>
+                        <span id="kpiShortlistPending" class="text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">0 Pending</span>
+                    </div>
+                </div>
+                <!-- ZIP Files Breakdown Row for AJIO (Colored Metrics) -->
+                <div class="mt-3 pt-2.5 border-t border-purple-100 grid grid-cols-4 gap-1.5 text-center text-[11px]">
+                    <div class="bg-emerald-50/70 p-1.5 rounded-lg border border-emerald-200/70">
+                        <div class="text-emerald-700 font-medium text-[10px]">OD</div>
+                        <div id="ajioZipOdCount" class="font-bold text-emerald-800 text-xs">0</div>
+                    </div>
+                    <div class="bg-amber-50/70 p-1.5 rounded-lg border border-amber-200/70">
+                        <div class="text-amber-700 font-medium text-[10px]">2-More</div>
+                        <div id="ajioZipTwoMoreCount" class="font-bold text-amber-800 text-xs">0</div>
+                    </div>
+                    <div class="bg-blue-50/70 p-1.5 rounded-lg border border-blue-200/70">
+                        <div class="text-blue-700 font-medium text-[10px]">Details</div>
+                        <div id="ajioZipDetailsCount" class="font-bold text-blue-800 text-xs">0</div>
+                    </div>
+                    <div class="bg-purple-50/70 p-1.5 rounded-lg border border-purple-200/70">
+                        <div class="text-purple-700 font-medium text-[10px]">Summary</div>
+                        <div id="ajioZipSummaryCount" class="font-bold text-purple-800 text-xs">0</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Sheet 2: Myntra -->
-            <div onclick="switchTab('partydetails')" class="cursor-pointer bg-white p-5 rounded-2xl border border-slate-200 hover:border-blue-400 shadow-xs hover:shadow-md transition-all group">
-                <div class="flex items-center justify-between text-slate-500 mb-1.5">
-                    <span class="text-sm font-bold uppercase tracking-wider text-slate-700 group-hover:text-blue-600 flex items-center gap-1.5">
-                        <i class="fa-solid fa-shirt text-blue-600"></i> Myntra
+            <!-- Sheet 2: Myntra (Blue Accent Theme) -->
+            <div onclick="switchTab('invoicesummary'); switchSummarySubTab('partydetails');" class="cursor-pointer bg-white p-5 rounded-xl border border-blue-200/90 hover:border-blue-400 shadow-2xs hover:shadow-xs transition-all group">
+                <div class="flex items-center justify-between text-slate-500 mb-2">
+                    <span class="text-xs font-bold text-blue-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-shirt text-blue-600 text-xs"></i> Myntra
                     </span>
-                    <span class="text-xs bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full font-bold">Party Details</span>
+                    <span class="text-[11px] bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-md font-bold border border-blue-200">Party Details</span>
                 </div>
-                <div class="text-3xl sm:text-4xl font-black text-slate-800" id="kpiPartyDetailsCount">0</div>
-                <div class="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
-                    <span id="kpiPartyDetailsDone" class="text-emerald-600 font-bold">0 Done</span>
-                    <span id="kpiPartyDetailsNot" class="text-rose-600 font-bold">0 Not</span>
+                <div class="flex items-baseline justify-between">
+                    <div class="text-3xl font-bold text-blue-700 tracking-tight" id="kpiPartyDetailsCount">0</div>
+                    <div class="text-xs flex items-center gap-1.5">
+                        <span id="kpiPartyDetailsDone" class="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">0 Done</span>
+                        <span class="text-slate-300">•</span>
+                        <span id="kpiPartyDetailsNot" class="text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded border border-rose-200">0 Not</span>
+                    </div>
+                </div>
+                <!-- ZIP Files Breakdown Row for Myntra (Colored Metrics) -->
+                <div class="mt-3 pt-2.5 border-t border-blue-100 grid grid-cols-4 gap-1.5 text-center text-[11px]">
+                    <div class="bg-emerald-50/70 p-1.5 rounded-lg border border-emerald-200/70">
+                        <div class="text-emerald-700 font-medium text-[10px]">PR</div>
+                        <div id="myntraZipPrCount" class="font-bold text-emerald-800 text-xs">0</div>
+                    </div>
+                    <div class="bg-amber-50/70 p-1.5 rounded-lg border border-amber-200/70">
+                        <div class="text-amber-700 font-medium text-[10px]">2-More</div>
+                        <div id="myntraZipTwoMoreCount" class="font-bold text-amber-800 text-xs">0</div>
+                    </div>
+                    <div class="bg-blue-50/70 p-1.5 rounded-lg border border-blue-200/70">
+                        <div class="text-blue-700 font-medium text-[10px]">Details</div>
+                        <div id="myntraZipDetailsCount" class="font-bold text-blue-800 text-xs">0</div>
+                    </div>
+                    <div class="bg-purple-50/70 p-1.5 rounded-lg border border-purple-200/70">
+                        <div class="text-purple-700 font-medium text-[10px]">Summary</div>
+                        <div id="myntraZipSummaryCount" class="font-bold text-purple-800 text-xs">0</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Sheet 3: Flipkart -->
-            <div onclick="switchTab('summary')" class="cursor-pointer bg-white p-5 rounded-2xl border border-slate-200 hover:border-amber-400 shadow-xs hover:shadow-md transition-all group">
-                <div class="flex items-center justify-between text-slate-500 mb-1.5">
-                    <span class="text-sm font-bold uppercase tracking-wider text-slate-700 group-hover:text-amber-600 flex items-center gap-1.5">
-                        <i class="fa-solid fa-cart-shopping text-amber-600"></i> Flipkart
+            <!-- Sheet 3: Flipkart (Amber Accent Theme) -->
+            <div onclick="switchTab('invoicesummary'); switchSummarySubTab('summary');" class="cursor-pointer bg-white p-5 rounded-xl border border-amber-200/90 hover:border-amber-400 shadow-2xs hover:shadow-xs transition-all group">
+                <div class="flex items-center justify-between text-slate-500 mb-2">
+                    <span class="text-xs font-bold text-amber-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-cart-shopping text-amber-600 text-xs"></i> Flipkart
                     </span>
-                    <span class="text-xs bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full font-bold">Summary</span>
+                    <span class="text-[11px] bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-md font-bold border border-amber-200">Summary</span>
                 </div>
-                <div class="text-3xl sm:text-4xl font-black text-slate-800" id="kpiSummaryCount">0</div>
-                <div class="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
-                    <span id="kpiSummaryDone" class="text-emerald-600 font-bold">0 Done</span>
-                    <span id="kpiSummaryPending" class="text-slate-400 font-medium">0 Pending</span>
+                <div class="flex items-baseline justify-between">
+                    <div class="text-3xl font-bold text-amber-700 tracking-tight" id="kpiSummaryCount">0</div>
+                    <div class="text-xs flex items-center gap-1.5">
+                        <span id="kpiSummaryDone" class="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">0 Done</span>
+                        <span class="text-slate-300">•</span>
+                        <span id="kpiSummaryPending" class="text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">0 Pending</span>
+                    </div>
+                </div>
+                <!-- ZIP Files Breakdown Row for Flipkart (Colored Metrics) -->
+                <div class="mt-3 pt-2.5 border-t border-amber-100 grid grid-cols-4 gap-1.5 text-center text-[11px]">
+                    <div class="bg-emerald-50/70 p-1.5 rounded-lg border border-emerald-200/70">
+                        <div class="text-emerald-700 font-medium text-[10px]">PR</div>
+                        <div id="flipkartZipPrCount" class="font-bold text-emerald-800 text-xs">0</div>
+                    </div>
+                    <div class="bg-amber-50/70 p-1.5 rounded-lg border border-amber-200/70">
+                        <div class="text-amber-700 font-medium text-[10px]">2-More</div>
+                        <div id="flipkartZipTwoMoreCount" class="font-bold text-amber-800 text-xs">0</div>
+                    </div>
+                    <div class="bg-blue-50/70 p-1.5 rounded-lg border border-blue-200/70">
+                        <div class="text-blue-700 font-medium text-[10px]">Details</div>
+                        <div id="flipkartZipDetailsCount" class="font-bold text-blue-800 text-xs">0</div>
+                    </div>
+                    <div class="bg-purple-50/70 p-1.5 rounded-lg border border-purple-200/70">
+                        <div class="text-purple-700 font-medium text-[10px]">Summary</div>
+                        <div id="flipkartZipSummaryCount" class="font-bold text-purple-800 text-xs">0</div>
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- Navigation Tabs & Toolbar -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <div class="flex flex-wrap items-center justify-between border-b border-slate-200 px-4 sm:px-6 py-3.5 gap-3">
-                <!-- Tab Buttons (AJIO, Myntra, Flipkart, Files & Upload) -->
+        <div class="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
+            <div class="flex flex-wrap items-center justify-between border-b border-slate-200/80 px-4 sm:px-6 py-3 gap-3">
+                <!-- Tab Buttons: ZIP Bundles First, then Invoice Summary Upload, then Files & Backups -->
                 <nav class="flex flex-wrap space-x-1 sm:space-x-2" aria-label="Tabs">
-                    <button onclick="switchTab('shortlist')" id="tab-shortlist" class="tab-btn active px-4 py-2 text-sm font-bold rounded-xl flex items-center space-x-2 text-purple-700 bg-purple-50 border border-purple-200 transition">
-                        <i class="fa-solid fa-bag-shopping text-purple-600"></i>
-                        <span>AJIO</span>
-                        <span id="tabCountShortlist" class="bg-purple-200/70 text-purple-900 text-xs px-2.5 py-0.5 rounded-full font-bold ml-1">0</span>
-                    </button>
-                    <button onclick="switchTab('partydetails')" id="tab-partydetails" class="tab-btn px-4 py-2 text-sm font-semibold rounded-xl flex items-center space-x-2 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition">
-                        <i class="fa-solid fa-shirt text-blue-600"></i>
-                        <span>Myntra</span>
-                        <span id="tabCountPartyDetails" class="bg-slate-200 text-slate-700 text-xs px-2.5 py-0.5 rounded-full font-bold ml-1">0</span>
-                    </button>
-                    <button onclick="switchTab('summary')" id="tab-summary" class="tab-btn px-4 py-2 text-sm font-semibold rounded-xl flex items-center space-x-2 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition">
-                        <i class="fa-solid fa-cart-shopping text-amber-600"></i>
-                        <span>Flipkart</span>
-                        <span id="tabCountSummary" class="bg-slate-200 text-slate-700 text-xs px-2.5 py-0.5 rounded-full font-bold ml-1">0</span>
-                    </button>
-                    <button onclick="switchTab('files')" id="tab-files" class="tab-btn px-4 py-2 text-sm font-semibold rounded-xl flex items-center space-x-2 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition">
-                        <i class="fa-solid fa-folder-open text-slate-500"></i>
-                        <span>Files & Upload</span>
-                    </button>
-                    <button onclick="switchTab('zipbundles')" id="tab-zipbundles" class="tab-btn px-4 py-2 text-sm font-semibold rounded-xl flex items-center space-x-2 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition">
+                    <button onclick="switchTab('zipbundles')" id="tab-zipbundles" class="tab-btn active px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg flex items-center space-x-2 text-indigo-700 bg-indigo-50/90 border border-indigo-200/90 transition">
                         <i class="fa-solid fa-file-zipper text-indigo-600"></i>
-                        <span>ZIP Bundles</span>
-                        <span id="tabCountZipBundles" class="bg-indigo-100 text-indigo-800 text-xs px-2.5 py-0.5 rounded-full font-bold ml-1">0</span>
+                        <span>ZIP Bundles & Registry</span>
+                        <span id="tabCountZipBundles" class="bg-indigo-100 text-indigo-800 text-[11px] px-2 py-0.2 rounded-full font-bold ml-1">0</span>
+                    </button>
+                    <button onclick="switchTab('invoicesummary')" id="tab-invoicesummary" class="tab-btn px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg flex items-center space-x-2 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50/50 transition">
+                        <i class="fa-solid fa-file-excel text-emerald-600"></i>
+                        <span>Invoice Summary Upload</span>
+                        <span id="tabCountInvoiceSummary" class="bg-emerald-100 text-emerald-800 text-[11px] px-2 py-0.2 rounded-full font-bold ml-1">0</span>
+                    </button>
+                    <button onclick="switchTab('files')" id="tab-files" class="tab-btn px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg flex items-center space-x-2 text-slate-600 hover:text-blue-700 hover:bg-blue-50/50 transition">
+                        <i class="fa-solid fa-folder-open text-blue-600"></i>
+                        <span>Files & Backups (ZIP & Excel)</span>
                     </button>
                 </nav>
 
                 <!-- Search & Add Actions -->
-                <div class="flex items-center space-x-2.5 w-full sm:w-auto">
+                <div class="flex items-center space-x-2 w-full sm:w-auto">
                     <div class="relative flex-1 sm:w-72">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-indigo-400">
                             <i class="fa-solid fa-magnifying-glass text-xs"></i>
                         </div>
-                        <input type="text" id="globalSearchInput" oninput="handleSearch(this.value)" placeholder="Search party or invoice range..." class="w-full pl-8 pr-8 py-2 bg-slate-50 border border-slate-300 focus:border-indigo-500 focus:bg-white focus:outline-none rounded-xl text-xs sm:text-sm transition">
-                        <button onclick="clearSearch()" id="clearSearchBtn" class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                        <input type="text" id="globalSearchInput" oninput="handleSearch(this.value)" placeholder="Search party or invoice range..." class="w-full pl-8 pr-8 py-1.5 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:outline-none rounded-lg text-xs transition font-medium text-slate-900">
+                        <button onclick="clearSearch()" id="clearSearchBtn" class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-rose-600">
                             <i class="fa-solid fa-xmark text-xs"></i>
                         </button>
                     </div>
 
-                    <button onclick="openAddModalForActiveTab()" class="flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs sm:text-sm font-bold px-4 py-2 rounded-xl shadow-sm transition whitespace-nowrap">
-                        <i class="fa-solid fa-plus"></i>
-                        <span id="addBtnLabel">Add to AJIO</span>
+                    <button onclick="openAddModalForActiveTab()" class="flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-indigo-600/20 shadow-2xs transition whitespace-nowrap">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span id="addBtnLabel">Add Party</span>
                     </button>
                 </div>
             </div>
 
-            <!-- SHEET 1: AJIO PANEL -->
-            <div id="panel-shortlist" class="tab-panel p-4 sm:p-6">
-                <!-- Toolbar -->
-                <div class="flex flex-wrap items-center justify-between gap-3 mb-5 bg-purple-50/50 p-4 sm:p-5 rounded-2xl border border-purple-100">
-                    <div class="flex items-center space-x-3">
-                        <div class="p-2.5 bg-purple-100 text-purple-700 rounded-xl">
-                            <i class="fa-solid fa-bag-shopping text-xl"></i>
+            <!-- UNIFIED TAB: INVOICE SUMMARY UPLOAD (AJIO, MYNTRA, FLIPKART) -->
+            <div id="panel-invoicesummary" class="tab-panel hidden p-4 sm:p-6 space-y-4">
+                <!-- Subtab Navigation Bar -->
+                <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-100 p-1.5 rounded-xl border border-slate-200/80">
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <button type="button" onclick="switchSummarySubTab('shortlist')" id="subtab-shortlist" class="subtab-btn active px-3.5 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 bg-white text-purple-700 shadow-2xs border border-purple-200 transition">
+                            <i class="fa-solid fa-bag-shopping text-purple-600 text-xs"></i>
+                            <span>AJIO (Short List)</span>
+                            <span id="subtabCountShortlist" class="text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.2 rounded font-bold border border-purple-200">0/0</span>
+                        </button>
+                        <button type="button" onclick="switchSummarySubTab('partydetails')" id="subtab-partydetails" class="subtab-btn px-3.5 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 text-blue-700 hover:bg-blue-50/70 transition">
+                            <i class="fa-solid fa-shirt text-blue-600 text-xs"></i>
+                            <span>Myntra (Party Details)</span>
+                            <span id="subtabCountPartyDetails" class="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.2 rounded font-bold border border-blue-200">0/0</span>
+                        </button>
+                        <button type="button" onclick="switchSummarySubTab('summary')" id="subtab-summary" class="subtab-btn px-3.5 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 text-amber-700 hover:bg-amber-50/70 transition">
+                            <i class="fa-solid fa-cart-shopping text-amber-600 text-xs"></i>
+                            <span>Flipkart (Summary)</span>
+                            <span id="subtabCountSummary" class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-bold border border-amber-200">0/0</span>
+                        </button>
+                        <button type="button" onclick="switchSummarySubTab('uploadbox')" id="subtab-uploadbox" class="subtab-btn px-3.5 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 text-indigo-700 hover:bg-indigo-50/70 transition">
+                            <i class="fa-solid fa-cloud-arrow-up text-indigo-600 text-xs"></i>
+                            <span>Upload Summary Excel</span>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-2 text-xs text-slate-500 pr-1">
+                        <span class="inline-flex items-center gap-1 font-normal"><i class="fa-regular fa-lightbulb text-slate-400"></i> Click card status to cycle</span>
+                    </div>
+                </div>
+
+                <!-- SUBPANEL 1: AJIO -->
+                <div id="subpanel-shortlist" class="summary-subpanel">
+                    <!-- Toolbar -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4 bg-white p-4 rounded-xl border border-slate-200/90 shadow-2xs">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-purple-50 text-purple-700 rounded-lg border border-purple-100">
+                                <i class="fa-solid fa-bag-shopping text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-sm sm:text-base text-slate-900 flex items-center gap-2">
+                                    <span>AJIO Checklist</span>
+                                    <span class="text-[11px] bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md font-medium border border-purple-200/70">Short List Sheet</span>
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">Track and toggle status as DONE when packing is completed.</p>
+                            </div>
                         </div>
+
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="flex items-center bg-slate-100 rounded-lg p-0.5 text-xs border border-slate-200">
+                                <button onclick="setBlockFilter('Short List', 'all')" id="filter-ShortList-all" class="px-2.5 py-1 rounded-md font-medium bg-slate-900 text-white transition">All</button>
+                                <button onclick="setBlockFilter('Short List', 'done')" id="filter-ShortList-done" class="px-2.5 py-1 rounded-md font-normal text-slate-600 hover:text-slate-900 transition">Done</button>
+                                <button onclick="setBlockFilter('Short List', 'pending')" id="filter-ShortList-pending" class="px-2.5 py-1 rounded-md font-normal text-slate-600 hover:text-slate-900 transition">Pending</button>
+                            </div>
+
+                            <button onclick="markAllBlockSheet('Short List', 'DONE')" class="text-xs bg-white hover:bg-slate-50 text-emerald-700 border border-slate-200 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-2xs">
+                                <i class="fa-solid fa-check-double text-emerald-600 text-xs"></i>
+                                <span>Mark All Done</span>
+                            </button>
+                            <button onclick="clearSheetData('Short List')" class="text-xs bg-white hover:bg-slate-50 text-rose-700 border border-slate-200 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-2xs" title="Remove all parties in AJIO">
+                                <i class="fa-solid fa-trash-can text-rose-600 text-xs"></i>
+                                <span>Clear AJIO</span>
+                            </button>
+
+                            <button onclick="copyBlockSheetToClipboard('Short List')" class="text-xs bg-slate-900 hover:bg-slate-800 active:scale-95 text-white px-3.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-2xs">
+                                <i class="fa-regular fa-copy text-xs"></i>
+                                <span>Copy for WhatsApp</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Cards Container (4 to 5 Columns) -->
+                    <div id="container-ShortList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- SUBPANEL 2: MYNTRA -->
+                <div id="subpanel-partydetails" class="summary-subpanel hidden">
+                    <!-- Toolbar -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4 bg-white p-4 rounded-xl border border-slate-200/90 shadow-2xs">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-100">
+                                <i class="fa-solid fa-shirt text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-sm sm:text-base text-slate-900 flex items-center gap-2">
+                                    <span>Myntra Checklist</span>
+                                    <span class="text-[11px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md font-medium border border-blue-200/70">Party Details Sheet</span>
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">Manage parties, invoice ranges, and mark DONE or NOT status.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="flex items-center bg-slate-100 rounded-lg p-0.5 text-xs border border-slate-200">
+                                <button onclick="setBlockFilter('Party Details', 'all')" id="filter-PartyDetails-all" class="px-2.5 py-1 rounded-md font-medium bg-slate-900 text-white transition">All</button>
+                                <button onclick="setBlockFilter('Party Details', 'done')" id="filter-PartyDetails-done" class="px-2.5 py-1 rounded-md font-normal text-slate-600 hover:text-slate-900 transition">Done</button>
+                                <button onclick="setBlockFilter('Party Details', 'not')" id="filter-PartyDetails-not" class="px-2.5 py-1 rounded-md font-normal text-slate-600 hover:text-slate-900 transition">Not</button>
+                                <button onclick="setBlockFilter('Party Details', 'pending')" id="filter-PartyDetails-pending" class="px-2.5 py-1 rounded-md font-normal text-slate-600 hover:text-slate-900 transition">Pending</button>
+                            </div>
+
+                            <button onclick="markAllBlockSheet('Party Details', 'DONE')" class="text-xs bg-white hover:bg-slate-50 text-emerald-700 border border-slate-200 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-2xs">
+                                <i class="fa-solid fa-check-double text-emerald-600 text-xs"></i>
+                                <span>Mark All Done</span>
+                            </button>
+                            <button onclick="clearSheetData('Party Details')" class="text-xs bg-white hover:bg-slate-50 text-rose-700 border border-slate-200 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-2xs" title="Remove all parties in Myntra">
+                                <i class="fa-solid fa-trash-can text-rose-600 text-xs"></i>
+                                <span>Clear Myntra</span>
+                            </button>
+
+                            <button onclick="copyBlockSheetToClipboard('Party Details')" class="text-xs bg-slate-900 hover:bg-slate-800 active:scale-95 text-white px-3.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-2xs">
+                                <i class="fa-regular fa-copy text-xs"></i>
+                                <span>Copy for WhatsApp</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Cards Container (4 to 5 Columns) -->
+                    <div id="container-PartyDetails" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- SUBPANEL 3: FLIPKART -->
+                <div id="subpanel-summary" class="summary-subpanel hidden">
+                    <!-- Toolbar -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4 bg-white p-4 rounded-xl border border-slate-200/90 shadow-2xs">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-amber-50 text-amber-700 rounded-lg border border-amber-100">
+                                <i class="fa-solid fa-cart-shopping text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-sm sm:text-base text-slate-900 flex items-center gap-2">
+                                    <span>Flipkart Checklist</span>
+                                    <span class="text-[11px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-md font-medium border border-amber-200/70">Summary Sheet</span>
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">Summary list of parties and assigned invoice ranges.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="flex items-center bg-slate-100 rounded-lg p-0.5 text-xs border border-slate-200">
+                                <button onclick="setBlockFilter('Summary', 'all')" id="filter-Summary-all" class="px-2.5 py-1 rounded-md font-medium bg-slate-900 text-white transition">All</button>
+                                <button onclick="setBlockFilter('Summary', 'done')" id="filter-Summary-done" class="px-2.5 py-1 rounded-md font-normal text-slate-600 hover:text-slate-900 transition">Done</button>
+                                <button onclick="setBlockFilter('Summary', 'pending')" id="filter-Summary-pending" class="px-2.5 py-1 rounded-md font-normal text-slate-600 hover:text-slate-900 transition">Pending</button>
+                            </div>
+
+                            <button onclick="markAllBlockSheet('Summary', 'DONE')" class="text-xs bg-white hover:bg-slate-50 text-emerald-700 border border-slate-200 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-2xs">
+                                <i class="fa-solid fa-check-double text-emerald-600 text-xs"></i>
+                                <span>Mark All Done</span>
+                            </button>
+                            <button onclick="clearSheetData('Summary')" class="text-xs bg-white hover:bg-slate-50 text-rose-700 border border-slate-200 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-2xs" title="Remove all parties in Flipkart">
+                                <i class="fa-solid fa-trash-can text-rose-600 text-xs"></i>
+                                <span>Clear Flipkart</span>
+                            </button>
+
+                            <button onclick="copyBlockSheetToClipboard('Summary')" class="text-xs bg-slate-900 hover:bg-slate-800 active:scale-95 text-white px-3.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-2xs">
+                                <i class="fa-regular fa-copy text-xs"></i>
+                                <span>Copy for WhatsApp</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Cards Container (4 to 5 Columns) -->
+                    <div id="container-Summary" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- SUBPANEL 4: UPLOAD EXCEL FILES -->
+                <div id="subpanel-uploadbox" class="summary-subpanel hidden">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200/90 shadow-2xs flex flex-col justify-between">
                         <div>
-                            <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
-                                AJIO Checklist
-                                <span class="text-xs bg-purple-200/70 text-purple-800 px-2.5 py-0.5 rounded-full font-bold">Short List Sheet</span>
-                            </h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Track and toggle status as DONE when packing is completed.</p>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-wrap items-center gap-2">
-                        <div class="flex items-center bg-white rounded-xl border border-slate-300 p-0.5 text-xs">
-                            <button onclick="setBlockFilter('Short List', 'all')" id="filter-ShortList-all" class="px-3 py-1.5 rounded-lg font-bold bg-slate-800 text-white transition">All</button>
-                            <button onclick="setBlockFilter('Short List', 'done')" id="filter-ShortList-done" class="px-3 py-1.5 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition">Done</button>
-                            <button onclick="setBlockFilter('Short List', 'pending')" id="filter-ShortList-pending" class="px-3 py-1.5 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition">Pending</button>
-                        </div>
-
-                        <button onclick="markAllBlockSheet('Short List', 'DONE')" class="text-xs sm:text-sm bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 px-3.5 py-1.5 rounded-xl font-semibold transition flex items-center gap-1.5 shadow-xs">
-                            <i class="fa-solid fa-check-double text-emerald-600"></i>
-                            <span>Mark All Done</span>
-                        </button>
-                        <button onclick="clearSheetData('Short List')" class="text-xs sm:text-sm bg-white hover:bg-rose-50 text-rose-700 border border-rose-300 px-3.5 py-1.5 rounded-xl font-semibold transition flex items-center gap-1.5 shadow-xs" title="Remove all parties in AJIO">
-                            <i class="fa-solid fa-trash-can text-rose-600"></i>
-                            <span>Clear AJIO</span>
-                        </button>
-
-                        <button onclick="copyBlockSheetToClipboard('Short List')" class="text-xs sm:text-sm bg-purple-600 hover:bg-purple-500 active:scale-95 text-white px-4 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 shadow-md shadow-purple-600/20">
-                            <i class="fa-solid fa-copy"></i>
-                            <span>Copy for WhatsApp</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Cards Container (4 to 5 Columns) -->
-                <div id="container-ShortList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5">
-                    <!-- Populated by JS -->
-                </div>
-            </div>
-
-            <!-- SHEET 2: MYNTRA PANEL -->
-            <div id="panel-partydetails" class="tab-panel hidden p-4 sm:p-6">
-                <!-- Toolbar -->
-                <div class="flex flex-wrap items-center justify-between gap-3 mb-5 bg-blue-50/50 p-4 sm:p-5 rounded-2xl border border-blue-100">
-                    <div class="flex items-center space-x-3">
-                        <div class="p-2.5 bg-blue-100 text-blue-700 rounded-xl">
-                            <i class="fa-solid fa-shirt text-xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
-                                Myntra Checklist
-                                <span class="text-xs bg-blue-200/70 text-blue-800 px-2.5 py-0.5 rounded-full font-bold">Party Details Sheet</span>
-                            </h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Manage parties, invoice ranges, and mark DONE or NOT status.</p>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-wrap items-center gap-2">
-                        <div class="flex items-center bg-white rounded-xl border border-slate-300 p-0.5 text-xs">
-                            <button onclick="setBlockFilter('Party Details', 'all')" id="filter-PartyDetails-all" class="px-3 py-1.5 rounded-lg font-bold bg-slate-800 text-white transition">All</button>
-                            <button onclick="setBlockFilter('Party Details', 'done')" id="filter-PartyDetails-done" class="px-3 py-1.5 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition">Done</button>
-                            <button onclick="setBlockFilter('Party Details', 'not')" id="filter-PartyDetails-not" class="px-3 py-1.5 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition">Not</button>
-                            <button onclick="setBlockFilter('Party Details', 'pending')" id="filter-PartyDetails-pending" class="px-3 py-1.5 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition">Pending</button>
-                        </div>
-
-                        <button onclick="markAllBlockSheet('Party Details', 'DONE')" class="text-xs sm:text-sm bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 px-3.5 py-1.5 rounded-xl font-semibold transition flex items-center gap-1.5 shadow-xs">
-                            <i class="fa-solid fa-check-double text-emerald-600"></i>
-                            <span>Mark All Done</span>
-                        </button>
-                        <button onclick="clearSheetData('Party Details')" class="text-xs sm:text-sm bg-white hover:bg-rose-50 text-rose-700 border border-rose-300 px-3.5 py-1.5 rounded-xl font-semibold transition flex items-center gap-1.5 shadow-xs" title="Remove all parties in Myntra">
-                            <i class="fa-solid fa-trash-can text-rose-600"></i>
-                            <span>Clear Myntra</span>
-                        </button>
-
-                        <button onclick="copyBlockSheetToClipboard('Party Details')" class="text-xs sm:text-sm bg-blue-600 hover:bg-blue-500 active:scale-95 text-white px-4 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 shadow-md shadow-blue-600/20">
-                            <i class="fa-solid fa-copy"></i>
-                            <span>Copy for WhatsApp</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Cards Container (4 to 5 Columns) -->
-                <div id="container-PartyDetails" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5">
-                    <!-- Populated by JS -->
-                </div>
-            </div>
-
-            <!-- SHEET 3: FLIPKART PANEL -->
-            <div id="panel-summary" class="tab-panel hidden p-4 sm:p-6">
-                <!-- Toolbar -->
-                <div class="flex flex-wrap items-center justify-between gap-3 mb-5 bg-amber-50/50 p-4 sm:p-5 rounded-2xl border border-amber-100">
-                    <div class="flex items-center space-x-3">
-                        <div class="p-2.5 bg-amber-100 text-amber-700 rounded-xl">
-                            <i class="fa-solid fa-cart-shopping text-xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
-                                Flipkart Checklist
-                                <span class="text-xs bg-amber-200/70 text-amber-800 px-2.5 py-0.5 rounded-full font-bold">Summary Sheet</span>
-                            </h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Summary list of parties and assigned invoice ranges.</p>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-wrap items-center gap-2">
-                        <div class="flex items-center bg-white rounded-xl border border-slate-300 p-0.5 text-xs">
-                            <button onclick="setBlockFilter('Summary', 'all')" id="filter-Summary-all" class="px-3 py-1.5 rounded-lg font-bold bg-slate-800 text-white transition">All</button>
-                            <button onclick="setBlockFilter('Summary', 'done')" id="filter-Summary-done" class="px-3 py-1.5 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition">Done</button>
-                            <button onclick="setBlockFilter('Summary', 'pending')" id="filter-Summary-pending" class="px-3 py-1.5 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition">Pending</button>
-                        </div>
-
-                        <button onclick="markAllBlockSheet('Summary', 'DONE')" class="text-xs sm:text-sm bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 px-3.5 py-1.5 rounded-xl font-semibold transition flex items-center gap-1.5 shadow-xs">
-                            <i class="fa-solid fa-check-double text-emerald-600"></i>
-                            <span>Mark All Done</span>
-                        </button>
-                        <button onclick="clearSheetData('Summary')" class="text-xs sm:text-sm bg-white hover:bg-rose-50 text-rose-700 border border-rose-300 px-3.5 py-1.5 rounded-xl font-semibold transition flex items-center gap-1.5 shadow-xs" title="Remove all parties in Flipkart">
-                            <i class="fa-solid fa-trash-can text-rose-600"></i>
-                            <span>Clear Flipkart</span>
-                        </button>
-
-                        <button onclick="copyBlockSheetToClipboard('Summary')" class="text-xs sm:text-sm bg-amber-600 hover:bg-amber-500 active:scale-95 text-white px-4 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 shadow-md shadow-amber-600/20">
-                            <i class="fa-solid fa-copy"></i>
-                            <span>Copy for WhatsApp</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Cards Container (4 to 5 Columns) -->
-                <div id="container-Summary" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5">
-                    <!-- Populated by JS -->
-                </div>
-            </div>
-
-            <!-- TAB 4: FILES & UPLOADS -->
-            <div id="panel-files" class="tab-panel hidden p-4 sm:p-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 flex flex-col justify-between">
-                        <div>
-                            <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2 mb-1">
+                            <h4 class="font-semibold text-slate-900 text-sm flex items-center gap-2 mb-1">
                                 <i class="fa-solid fa-cloud-arrow-up text-indigo-600"></i>
-                                Upload Excel Files (Single or Multiple)
+                                <span>Upload Invoice Summary Excel Files</span>
                             </h4>
-                            <p class="text-xs text-slate-500 mb-4">You can select all 3 files at once (AJIO Report, Myntra Summary, Flipkart Summary). All 3 will merge and display instantly!</p>
+                            <p class="text-xs text-slate-500 mb-4">Select or drop your Summary Excel files (AJIO Short List, Myntra Party Details, or Flipkart Summary). The checklist will update immediately!</p>
                             
-                            <div class="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-xl p-6 text-center transition bg-white cursor-pointer" onclick="document.getElementById('excelFileInput').click()">
-                                <i class="fa-regular fa-file-excel text-4xl text-emerald-500 mb-2"></i>
-                                <p class="text-xs font-semibold text-slate-700">Click to select or drag & drop ALL .xlsx files</p>
+                            <div class="border-2 border-dashed border-slate-200 hover:border-slate-400 rounded-xl p-8 text-center transition bg-slate-50/50 hover:bg-slate-50 cursor-pointer" onclick="document.getElementById('excelFileInput').click()">
+                                <i class="fa-regular fa-file-excel text-4xl text-emerald-600 mb-2"></i>
+                                <p class="text-xs font-medium text-slate-800">Click to select or drag & drop .xlsx files here</p>
+                                <p class="text-[11px] text-slate-400 mt-1">Supports multiple files selection</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: FILES & UPLOADS -->
+            <div id="panel-files" class="tab-panel hidden p-4 sm:p-6 space-y-5">
+
+                <!-- DEDICATED SECTION 1: MARKETPLACE ZIP BUNDLES UPLOAD (IMAGE 1 PART) -->
+                <div class="bg-white p-5 sm:p-6 rounded-xl border border-slate-200/90 shadow-2xs space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 text-base">
+                                <i class="fa-solid fa-file-zipper"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-base text-slate-900 flex items-center gap-2">
+                                    <span>Marketplace ZIP Bundles Upload</span>
+                                    <span id="filesZipPlatformBadge" class="text-[11px] bg-purple-50 text-purple-700 px-2.5 py-0.5 rounded-md font-medium border border-purple-200/80">AJIO</span>
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">Upload Order (OD/PR), Details, and Summary ZIP archives for automated party mapping.</p>
+                            </div>
+                        </div>
+
+                        <!-- Platform Switcher Buttons for Quick ZIP Upload -->
+                        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200/80">
+                            <button type="button" onclick="switchZipPlatform('AJIO')" id="filesZipBtn-AJIO" class="filesZipPlatBtn px-3.5 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 bg-white text-slate-900 border border-slate-200 shadow-2xs">
+                                <i class="fa-solid fa-bag-shopping text-purple-600 text-xs"></i>
+                                <span>AJIO</span>
+                            </button>
+                            <button type="button" onclick="switchZipPlatform('MYNTRA')" id="filesZipBtn-MYNTRA" class="filesZipPlatBtn px-3.5 py-1.5 rounded-md text-xs font-normal text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-shirt text-blue-600 text-xs"></i>
+                                <span>Myntra</span>
+                            </button>
+                            <button type="button" onclick="switchZipPlatform('FLIPKART')" id="filesZipBtn-FLIPKART" class="filesZipPlatBtn px-3.5 py-1.5 rounded-md text-xs font-normal text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-cart-shopping text-amber-600 text-xs"></i>
+                                <span>Flipkart</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- The 3 Dedicated ZIP Upload Cards (Distinct Green, Blue, Purple Themes) -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
+                        <!-- Slot 1: Order / Processed ZIP (Emerald / Green Theme) -->
+                        <div class="bg-emerald-50/40 p-5 rounded-xl border border-emerald-200/90 hover:border-emerald-400 shadow-2xs hover:shadow-xs transition group flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2.5">
+                                    <div class="flex items-center space-x-2.5">
+                                        <span class="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-semibold text-xs shadow-2xs">1</span>
+                                        <h4 class="zipSlot1Title font-semibold text-emerald-950 text-sm">Order ZIP (OD + 2 More)</h4>
+                                    </div>
+                                    <span class="text-[10px] bg-emerald-100/90 text-emerald-800 font-medium px-2 py-0.5 rounded-md border border-emerald-200">Slot 1</span>
+                                </div>
+                                <p class="zipSlot1Desc text-[11px] text-emerald-900/70 mb-3.5 leading-relaxed">
+                                    Upload processed zip (e.g. <code class="bg-white/90 border border-emerald-200/80 px-1 py-0.5 rounded text-emerald-900 font-mono">101-157_processed.zip</code>). Auto-saves OD and 2 More Invoice (optional).
+                                </p>
+
+                                <div class="border-2 border-dashed border-emerald-300 hover:border-emerald-500 bg-white hover:bg-emerald-50/60 rounded-xl p-5 text-center cursor-pointer transition shadow-2xs" onclick="document.getElementById('filesZipInput-order').click()">
+                                    <i class="fa-solid fa-file-zipper text-3xl text-emerald-600 mb-1.5 group-hover:scale-105 transition-transform"></i>
+                                    <p class="zipSlot1DropText text-xs font-semibold text-emerald-950">Select or Drop Order .zip (OD file)</p>
+                                    <p class="text-[10px] text-emerald-700/70 mt-0.5">Extracts per-party folder</p>
+                                    <input type="file" id="filesZipInput-order" accept=".zip" onchange="uploadPlatformZip('order', this.files[0])" class="hidden">
+                                </div>
+                            </div>
+                            <div class="zipUploadStatus-order mt-3 text-xs min-h-[20px]"></div>
+                        </div>
+
+                        <!-- Slot 2: Details ZIP Bundle (Blue Theme) -->
+                        <div class="bg-blue-50/40 p-5 rounded-xl border border-blue-200/90 hover:border-blue-400 shadow-2xs hover:shadow-xs transition group flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2.5">
+                                    <div class="flex items-center space-x-2.5">
+                                        <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-semibold text-xs shadow-2xs">2</span>
+                                        <h4 class="font-semibold text-blue-950 text-sm">Details ZIP Bundle</h4>
+                                    </div>
+                                    <span class="text-[10px] bg-blue-100/90 text-blue-800 font-medium px-2 py-0.5 rounded-md border border-blue-200">Slot 2</span>
+                                </div>
+                                <p class="text-[11px] text-blue-900/70 mb-3.5 leading-relaxed">
+                                    Upload details zip (e.g. <code class="bg-white/90 border border-blue-200/80 px-1 py-0.5 rounded text-blue-900 font-mono">ajio_details_seprate_bundle.zip</code>). Maps party detail sheets to codes.
+                                </p>
+
+                                <div class="border-2 border-dashed border-blue-300 hover:border-blue-500 bg-white hover:bg-blue-50/60 rounded-xl p-5 text-center cursor-pointer transition shadow-2xs" onclick="document.getElementById('filesZipInput-details').click()">
+                                    <i class="fa-solid fa-file-zipper text-3xl text-blue-600 mb-1.5 group-hover:scale-105 transition-transform"></i>
+                                    <p class="text-xs font-semibold text-blue-950">Select or Drop Details .zip</p>
+                                    <p class="text-[10px] text-blue-700/70 mt-0.5">Maps all party detail files</p>
+                                    <input type="file" id="filesZipInput-details" accept=".zip" onchange="uploadPlatformZip('details', this.files[0])" class="hidden">
+                                </div>
+                            </div>
+                            <div class="zipUploadStatus-details mt-3 text-xs min-h-[20px]"></div>
+                        </div>
+
+                        <!-- Slot 3: Summary ZIP Bundle (Purple Theme) -->
+                        <div class="bg-purple-50/40 p-5 rounded-xl border border-purple-200/90 hover:border-purple-400 shadow-2xs hover:shadow-xs transition group flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2.5">
+                                    <div class="flex items-center space-x-2.5">
+                                        <span class="w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center font-semibold text-xs shadow-2xs">3</span>
+                                        <h4 class="font-semibold text-purple-950 text-sm">Summary ZIP Bundle</h4>
+                                    </div>
+                                    <span class="text-[10px] bg-purple-100/90 text-purple-800 font-medium px-2 py-0.5 rounded-md border border-purple-200">Slot 3</span>
+                                </div>
+                                <p class="text-[11px] text-purple-900/70 mb-3.5 leading-relaxed">
+                                    Upload summary zip (e.g. <code class="bg-white/90 border border-purple-200/80 px-1 py-0.5 rounded text-purple-900 font-mono">ajio_summry_seprate_bundle.zip</code>). Maps party summary sheets to codes.
+                                </p>
+
+                                <div class="border-2 border-dashed border-purple-300 hover:border-purple-500 bg-white hover:bg-purple-50/60 rounded-xl p-5 text-center cursor-pointer transition shadow-2xs" onclick="document.getElementById('filesZipInput-summary').click()">
+                                    <i class="fa-solid fa-file-zipper text-3xl text-purple-600 mb-1.5 group-hover:scale-105 transition-transform"></i>
+                                    <p class="text-xs font-semibold text-purple-950">Select or Drop Summary .zip</p>
+                                    <p class="text-[10px] text-purple-700/70 mt-0.5">Maps all party summary files</p>
+                                    <input type="file" id="filesZipInput-summary" accept=".zip" onchange="uploadPlatformZip('summary', this.files[0])" class="hidden">
+                                </div>
+                            </div>
+                            <div class="zipUploadStatus-summary mt-3 text-xs min-h-[20px]"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: EXCEL FILES UPLOAD & DIRECTORY LIST -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="bg-white p-5 sm:p-6 rounded-xl border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+                        <div>
+                            <h4 class="font-semibold text-slate-900 text-sm flex items-center gap-2 mb-1">
+                                <i class="fa-solid fa-cloud-arrow-up text-indigo-600"></i>
+                                <span>Upload Excel Files (Single or Multiple)</span>
+                            </h4>
+                            <p class="text-xs text-slate-500 mb-4">Select all 3 files at once (AJIO Report, Myntra Summary, Flipkart Summary) to display and merge instantly.</p>
+                            
+                            <div class="border-2 border-dashed border-slate-200 hover:border-slate-400 rounded-xl p-6 text-center transition bg-slate-50/50 hover:bg-slate-50 cursor-pointer" onclick="document.getElementById('excelFileInput').click()">
+                                <i class="fa-regular fa-file-excel text-3xl text-emerald-600 mb-2"></i>
+                                <p class="text-xs font-medium text-slate-800">Click to select or drag & drop ALL .xlsx files</p>
                                 <p class="text-[11px] text-slate-400 mt-1">Supports multiple files selection</p>
                                 <input type="file" id="excelFileInput" multiple accept=".xlsx" onchange="uploadNewExcel(this.files)" class="hidden">
                             </div>
@@ -359,23 +590,23 @@
                         <div id="uploadStatusMsg" class="mt-3 text-xs"></div>
                     </div>
 
-                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
-                        <div class="flex items-center justify-between mb-2">
-                            <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                                <i class="fa-solid fa-folder-tree text-indigo-600"></i>
-                                Loaded Files in Directory
+                    <div class="bg-white p-5 sm:p-6 rounded-xl border border-slate-200/90 shadow-2xs">
+                        <div class="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
+                            <h4 class="font-semibold text-slate-900 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-folder-tree text-slate-600"></i>
+                                <span>Loaded Files in Directory</span>
                             </h4>
-                            <button onclick="clearAllUploadedData()" class="text-xs text-rose-600 hover:text-rose-800 font-semibold flex items-center gap-1">
-                                <i class="fa-solid fa-trash-can"></i> Clear All Files
+                            <button onclick="clearAllUploadedData()" class="text-xs text-rose-600 hover:text-rose-800 font-medium flex items-center gap-1">
+                                <i class="fa-solid fa-trash-can text-xs"></i> Clear All
                             </button>
                         </div>
                         <div id="loadedFilesList" class="space-y-1.5 mb-4 text-xs">
                             <!-- Injected by JS -->
                         </div>
 
-                        <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2 mb-2 pt-3 border-t">
-                            <i class="fa-solid fa-clock-rotate-left text-amber-600"></i>
-                            Automatic Backups
+                        <h4 class="font-semibold text-slate-900 text-sm flex items-center gap-2 mb-2 pt-3 border-t border-slate-100">
+                            <i class="fa-solid fa-clock-rotate-left text-slate-500"></i>
+                            <span>Automatic Backups</span>
                         </h4>
                         <div id="backupsList" class="max-h-36 overflow-y-auto space-y-1.5 pr-1 text-xs">
                             <div class="text-slate-400 italic">Loading backups...</div>
@@ -384,22 +615,22 @@
                 </div>
             </div>
 
-            <!-- TAB 5: ZIP BUNDLES & ARCHIVE MANAGER -->
-            <div id="panel-zipbundles" class="tab-panel hidden p-4 sm:p-6 space-y-6">
-                <!-- Platform Header & Switcher -->
-                <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-900 text-white p-5 rounded-2xl shadow-sm">
+            <!-- TAB 1: ZIP BUNDLES & ARCHIVE MANAGER (DEFAULT ACTIVE) -->
+            <div id="panel-zipbundles" class="tab-panel p-4 sm:p-6 space-y-5">
+                <!-- Platform Header & Switcher (Light Modern Card) -->
+                <div class="flex flex-wrap items-center justify-between gap-4 bg-white text-slate-900 p-5 rounded-xl border border-slate-200/90 shadow-2xs">
                     <div class="flex items-center space-x-3.5">
-                        <div class="w-12 h-12 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300 text-2xl">
+                        <div class="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 text-base">
                             <i class="fa-solid fa-file-zipper"></i>
                         </div>
                         <div>
-                            <h3 class="font-extrabold text-base sm:text-lg tracking-tight flex items-center gap-2.5">
+                            <h3 class="font-bold text-base tracking-tight text-indigo-950 flex items-center gap-2">
                                 <span>Marketplace ZIP Bundle Hub</span>
-                                <span id="zipPlatformBadge" class="text-xs bg-purple-500/30 text-purple-200 border border-purple-400/40 px-3 py-0.5 rounded-full font-bold">AJIO</span>
+                                <span id="zipPlatformBadge" class="text-[11px] bg-purple-100 text-purple-800 border border-purple-200 px-2.5 py-0.5 rounded-md font-bold">AJIO</span>
                             </h3>
-                            <p class="text-xs text-slate-300 mt-0.5 flex flex-wrap items-center gap-2">
-                                <span>Upload Order, Details, and Summary ZIP archives.</span>
-                                <span class="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-md text-[11px] font-medium" title="Auto-cleans uploaded files after 2 hours to keep Render Free 512MB storage fast and clean">
+                            <p class="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-2">
+                                <span class="font-medium text-slate-600">Upload Order, Details, and Summary ZIP archives.</span>
+                                <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md text-[11px] font-bold" title="Auto-cleans uploaded files after 2 hours to keep Render Free 512MB storage fast and clean">
                                     <i class="fa-solid fa-clock-rotate-left"></i> Auto-expires in 2h (512MB Safe)
                                 </span>
                             </p>
@@ -407,162 +638,91 @@
                     </div>
 
                     <!-- Platform Switcher Buttons -->
-                    <div class="flex items-center gap-2 bg-slate-800/90 p-1.5 rounded-xl border border-slate-700">
-                        <button onclick="switchZipPlatform('AJIO')" id="zipPlatformBtn-AJIO" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-purple-600 text-white shadow-sm">
-                            <i class="fa-solid fa-bag-shopping text-xs"></i>
+                    <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200/80">
+                        <button onclick="switchZipPlatform('AJIO')" id="zipPlatformBtn-AJIO" class="px-3.5 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1.5 bg-white text-purple-700 border border-purple-200 shadow-2xs">
+                            <i class="fa-solid fa-bag-shopping text-purple-600 text-xs"></i>
                             <span>AJIO</span>
                         </button>
-                        <button onclick="switchZipPlatform('MYNTRA')" id="zipPlatformBtn-MYNTRA" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-700/60 transition flex items-center gap-1.5">
-                            <i class="fa-solid fa-shirt text-xs"></i>
+                        <button onclick="switchZipPlatform('MYNTRA')" id="zipPlatformBtn-MYNTRA" class="px-3.5 py-1.5 rounded-md text-xs font-bold text-slate-600 hover:text-blue-700 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-shirt text-blue-600 text-xs"></i>
                             <span>Myntra</span>
                         </button>
-                        <button onclick="switchZipPlatform('FLIPKART')" id="zipPlatformBtn-FLIPKART" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-700/60 transition flex items-center gap-1.5">
-                            <i class="fa-solid fa-cart-shopping text-xs"></i>
+                        <button onclick="switchZipPlatform('FLIPKART')" id="zipPlatformBtn-FLIPKART" class="px-3.5 py-1.5 rounded-md text-xs font-bold text-slate-600 hover:text-amber-700 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-cart-shopping text-amber-600 text-xs"></i>
                             <span>Flipkart</span>
                         </button>
                     </div>
 
-                    <!-- Clear / Refresh Platform ZIPs -->
+                    <!-- Clear / Refresh Platform ZIPs & Upload Navigation -->
                     <div class="flex items-center gap-2">
-                        <button onclick="loadZipStatus(true)" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs transition border border-slate-700" title="Refresh ZIP Status">
+                        <button onclick="switchTab('files')" class="flex items-center space-x-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-2xs" title="Go to Files & Backups to upload new ZIPs">
+                            <i class="fa-solid fa-cloud-arrow-up text-xs text-indigo-600"></i>
+                            <span>Upload ZIPs</span>
+                        </button>
+                        <button onclick="loadZipStatus(true)" class="p-2 bg-white hover:bg-slate-50 text-slate-600 rounded-lg text-xs transition border border-slate-200 shadow-2xs" title="Refresh ZIP Status">
                             <i class="fa-solid fa-rotate text-xs"></i>
                         </button>
-                        <button onclick="clearZipPlatformData()" class="flex items-center space-x-1.5 bg-rose-600/90 hover:bg-rose-500 text-white px-3 py-2 rounded-xl text-xs font-bold transition shadow-xs">
-                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        <button onclick="clearZipPlatformData()" class="flex items-center space-x-1.5 bg-white hover:bg-rose-50 text-rose-700 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-2xs">
+                            <i class="fa-solid fa-trash-can text-xs text-rose-600"></i>
                             <span>Clear Platform ZIPs</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- Platform KPI Summary Cards -->
+                <!-- Platform KPI Summary Cards (Vibrant Colored Cards & Text) -->
                 <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 text-xs">
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-                        <div class="text-slate-400 font-semibold mb-1 flex items-center gap-1.5">
+                    <div class="bg-indigo-50/40 p-4 rounded-xl border border-indigo-200 shadow-2xs">
+                        <div class="text-indigo-700 font-semibold mb-1 flex items-center gap-1.5">
                             <i class="fa-solid fa-users-gear text-indigo-500"></i> Total Parties
                         </div>
-                        <div id="zipKpiTotalParties" class="text-2xl font-black text-slate-800">0</div>
+                        <div id="zipKpiTotalParties" class="text-3xl font-bold text-indigo-800">0</div>
                     </div>
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-                        <div class="text-slate-400 font-semibold mb-1 flex items-center gap-1.5">
-                            <i class="fa-solid fa-file-invoice text-emerald-500"></i> <span id="zipKpiODLabel">OD Files</span>
+                    <div class="bg-emerald-50/40 p-4 rounded-xl border border-emerald-200 shadow-2xs">
+                        <div class="text-emerald-700 font-semibold mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-invoice text-emerald-600"></i> <span id="zipKpiODLabel">OD Files</span>
                         </div>
-                        <div id="zipKpiODFiles" class="text-2xl font-black text-emerald-600">0</div>
+                        <div id="zipKpiODFiles" class="text-3xl font-bold text-emerald-800">0</div>
                     </div>
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-                        <div class="text-slate-400 font-semibold mb-1 flex items-center gap-1.5">
-                            <i class="fa-solid fa-file-circle-plus text-amber-500"></i> 2 More Invoice (Opt)
+                    <div class="bg-amber-50/40 p-4 rounded-xl border border-amber-200 shadow-2xs">
+                        <div class="text-amber-700 font-semibold mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-circle-plus text-amber-600"></i> 2 More Invoice (Opt)
                         </div>
-                        <div id="zipKpiTwoMoreFiles" class="text-2xl font-black text-amber-600">0</div>
+                        <div id="zipKpiTwoMoreFiles" class="text-3xl font-bold text-amber-800">0</div>
                     </div>
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-                        <div class="text-slate-400 font-semibold mb-1 flex items-center gap-1.5">
-                            <i class="fa-solid fa-file-lines text-blue-500"></i> Details Files
+                    <div class="bg-blue-50/40 p-4 rounded-xl border border-blue-200 shadow-2xs">
+                        <div class="text-blue-700 font-semibold mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-lines text-blue-600"></i> Details Files
                         </div>
-                        <div id="zipKpiDetailsFiles" class="text-2xl font-black text-blue-600">0</div>
+                        <div id="zipKpiDetailsFiles" class="text-3xl font-bold text-blue-800">0</div>
                     </div>
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs col-span-2 sm:col-span-1">
-                        <div class="text-slate-400 font-semibold mb-1 flex items-center gap-1.5">
-                            <i class="fa-solid fa-file-shield text-purple-500"></i> Summary Files
+                    <div class="bg-purple-50/40 p-4 rounded-xl border border-purple-200 shadow-2xs col-span-2 sm:col-span-1">
+                        <div class="text-purple-700 font-semibold mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-shield text-purple-600"></i> Summary Files
                         </div>
-                        <div id="zipKpiSummaryFiles" class="text-2xl font-black text-purple-600">0</div>
-                    </div>
-                </div>
-
-                <!-- 3 Dedicated ZIP Upload Cards (Order, Details, Summary) -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                    <!-- Slot 1: Order / Processed ZIP -->
-                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-emerald-300 transition group">
-                        <div>
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="flex items-center space-x-2">
-                                    <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">1</span>
-                                    <h4 id="zipSlot1Title" class="font-bold text-slate-800 text-sm">Order ZIP (OD + 2 More)</h4>
-                                </div>
-                                <span class="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded border border-emerald-200">Slot 1</span>
-                            </div>
-                            <p id="zipSlot1Desc" class="text-[11px] text-slate-500 mb-3.5">
-                                Upload processed zip (e.g. <code id="zipSlot1CodeExample" class="bg-slate-100 px-1 py-0.5 rounded text-slate-700">101-157_processed.zip</code>). Auto-saves OD and 2 More Invoice (optional).
-                            </p>
-
-                            <div class="border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-emerald-50/20 rounded-xl p-5 text-center cursor-pointer transition" onclick="document.getElementById('zipInput-order').click()">
-                                <i class="fa-solid fa-file-zipper text-3xl text-emerald-600 mb-1.5 group-hover:scale-110 transition-transform"></i>
-                                <p id="zipSlot1DropText" class="text-xs font-bold text-slate-700">Select or Drop Order .zip (OD file)</p>
-                                <p class="text-[10px] text-slate-400 mt-0.5">Extracts per-party folder</p>
-                                <input type="file" id="zipInput-order" accept=".zip" onchange="uploadPlatformZip('order', this.files[0])" class="hidden">
-                            </div>
-                        </div>
-                        <div id="zipUploadStatus-order" class="mt-3 text-xs min-h-[20px]"></div>
-                    </div>
-
-                    <!-- Slot 2: Details ZIP -->
-                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-blue-300 transition group">
-                        <div>
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="flex items-center space-x-2">
-                                    <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">2</span>
-                                    <h4 class="font-bold text-slate-800 text-sm">Details ZIP Bundle</h4>
-                                </div>
-                                <span class="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded border border-blue-200">Slot 2</span>
-                            </div>
-                            <p class="text-[11px] text-slate-500 mb-3.5">
-                                Upload details zip (e.g. <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-700">ajio_details_seprate_bundle.zip</code>). Maps party detail sheets to codes.
-                            </p>
-
-                            <div class="border-2 border-dashed border-slate-300 hover:border-blue-500 bg-blue-50/20 rounded-xl p-5 text-center cursor-pointer transition" onclick="document.getElementById('zipInput-details').click()">
-                                <i class="fa-solid fa-file-zipper text-3xl text-blue-600 mb-1.5 group-hover:scale-110 transition-transform"></i>
-                                <p class="text-xs font-bold text-slate-700">Select or Drop Details .zip</p>
-                                <p class="text-[10px] text-slate-400 mt-0.5">Maps all party detail files</p>
-                                <input type="file" id="zipInput-details" accept=".zip" onchange="uploadPlatformZip('details', this.files[0])" class="hidden">
-                            </div>
-                        </div>
-                        <div id="zipUploadStatus-details" class="mt-3 text-xs min-h-[20px]"></div>
-                    </div>
-
-                    <!-- Slot 3: Summary ZIP -->
-                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-purple-300 transition group">
-                        <div>
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="flex items-center space-x-2">
-                                    <span class="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-sm">3</span>
-                                    <h4 class="font-bold text-slate-800 text-sm">Summary ZIP Bundle</h4>
-                                </div>
-                                <span class="text-[10px] bg-purple-50 text-purple-700 font-bold px-2 py-0.5 rounded border border-purple-200">Slot 3</span>
-                            </div>
-                            <p class="text-[11px] text-slate-500 mb-3.5">
-                                Upload summary zip (e.g. <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-700">ajio_summry_seprate_bundle.zip</code>). Maps party summary sheets to codes.
-                            </p>
-
-                            <div class="border-2 border-dashed border-slate-300 hover:border-purple-500 bg-purple-50/20 rounded-xl p-5 text-center cursor-pointer transition" onclick="document.getElementById('zipInput-summary').click()">
-                                <i class="fa-solid fa-file-zipper text-3xl text-purple-600 mb-1.5 group-hover:scale-110 transition-transform"></i>
-                                <p class="text-xs font-bold text-slate-700">Select or Drop Summary .zip</p>
-                                <p class="text-[10px] text-slate-400 mt-0.5">Maps all party summary files</p>
-                                <input type="file" id="zipInput-summary" accept=".zip" onchange="uploadPlatformZip('summary', this.files[0])" class="hidden">
-                            </div>
-                        </div>
-                        <div id="zipUploadStatus-summary" class="mt-3 text-xs min-h-[20px]"></div>
+                        <div id="zipKpiSummaryFiles" class="text-3xl font-bold text-purple-800">0</div>
                     </div>
                 </div>
 
                 <!-- Live Auto-Select & File Dispatch Tester (Next Step Pipeline Box) -->
-                <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 sm:p-6 rounded-2xl shadow-md border border-indigo-900/50 space-y-4">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="bg-white text-slate-900 p-5 sm:p-6 rounded-xl border border-indigo-100 shadow-2xs space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
                         <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 text-xl">
+                            <div class="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 text-base">
                                 <i class="fa-solid fa-bolt"></i>
                             </div>
                             <div>
-                                <h4 class="font-extrabold text-sm sm:text-base text-white flex items-center gap-2">
+                                <h4 class="font-bold text-sm sm:text-base text-indigo-950 flex items-center gap-2">
                                     <span>Party Auto-Select & File Dispatch Pipeline</span>
-                                    <span class="text-[10px] bg-emerald-500/30 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-full font-bold">Step 2 Ready</span>
+                                    <span class="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-md font-bold">Step 2 Ready</span>
                                 </h4>
-                                <p class="text-xs text-indigo-200/80">Select any party code to automatically retrieve its OD file, 2 More Invoice (optional), Details, and Summary files.</p>
+                                <p class="text-xs text-slate-500 mt-0.5">Select any party code to view its OD/PR file, 2 More Invoice, Details, and Summary sheets.</p>
                             </div>
                         </div>
 
                         <!-- Quick Party Selector Dropdown -->
                         <div class="flex items-center space-x-2">
-                            <label class="text-xs font-semibold text-slate-300">Select Party:</label>
-                            <select id="quickPartySelector" onchange="selectPartyForPipeline(this.value)" class="bg-slate-800 text-white font-bold text-xs px-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                            <label class="text-xs font-semibold text-indigo-900">Select Party:</label>
+                            <select id="quickPartySelector" onchange="selectPartyForPipeline(this.value)" class="bg-white text-indigo-950 font-bold text-xs px-3 py-1.5 rounded-lg border border-indigo-200 focus:outline-none focus:border-indigo-400 cursor-pointer shadow-2xs">
                                 <option value="">-- Choose Party Code --</option>
                             </select>
                         </div>
@@ -570,18 +730,18 @@
 
                     <!-- 4 Linked File Slots Display -->
                     <div id="partyPipelineDetailsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-                        <div class="bg-slate-800/80 rounded-xl p-3.5 border border-slate-700/80 text-center text-slate-400 italic col-span-full py-6">
-                            <i class="fa-solid fa-arrow-pointer mb-2 text-xl text-indigo-400"></i>
-                            <p>Select a party code from the dropdown above to test file linking and automated dispatch.</p>
+                        <div class="bg-indigo-50/30 rounded-xl p-4 border border-indigo-100 text-center text-indigo-700 italic col-span-full py-6">
+                            <i class="fa-regular fa-hand-pointer mb-2 text-xl text-indigo-500"></i>
+                            <p class="font-medium">Select a party code from the dropdown above to test file linking and automated dispatch.</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Master Party Files Matrix / Registry Table -->
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-                    <div class="p-4 sm:p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                <div class="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
+                    <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <h4 class="font-bold text-indigo-950 text-sm flex items-center gap-2">
                                 <i class="fa-solid fa-table-cells text-indigo-600"></i>
                                 <span id="partyRegistryTableTitle">AJIO Party Files Registry</span>
                             </h4>
@@ -590,7 +750,7 @@
 
                         <div class="flex items-center space-x-2">
                             <div class="relative w-64">
-                                <input type="text" id="zipPartySearchInput" oninput="filterZipRegistryTable(this.value)" placeholder="Search party code or name..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-300 focus:border-indigo-500 focus:bg-white focus:outline-none rounded-xl text-xs">
+                                <input type="text" id="zipPartySearchInput" oninput="filterZipRegistryTable(this.value)" placeholder="Search party code or name..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 focus:border-slate-400 focus:bg-white focus:outline-none rounded-lg text-xs">
                                 <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
                                     <i class="fa-solid fa-magnifying-glass text-xs"></i>
                                 </div>
@@ -601,13 +761,13 @@
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs border-collapse">
                             <thead>
-                                <tr class="bg-slate-50/90 text-slate-600 uppercase font-bold border-b border-slate-200 text-[11px]">
-                                    <th class="py-3 px-4">Party Code & Name</th>
-                                    <th id="zipRegistryCol1Header" class="py-3 px-4 text-center">1. OD File</th>
-                                    <th class="py-3 px-4 text-center">2. 2 More Invoice</th>
-                                    <th class="py-3 px-4 text-center">3. Details Sheet</th>
-                                    <th class="py-3 px-4 text-center">4. Summary Sheet</th>
-                                    <th class="py-3 px-4 text-center">Party Bundle</th>
+                                <tr class="bg-slate-50/80 text-slate-600 font-medium border-b border-slate-200 text-[11px]">
+                                    <th class="py-2.5 px-4 font-medium">Party Code & Name</th>
+                                    <th id="zipRegistryCol1Header" class="py-2.5 px-4 text-center font-medium">1. OD File</th>
+                                    <th class="py-2.5 px-4 text-center font-medium">2. 2 More Invoice</th>
+                                    <th class="py-2.5 px-4 text-center font-medium">3. Details Sheet</th>
+                                    <th class="py-2.5 px-4 text-center font-medium">4. Summary Sheet</th>
+                                    <th class="py-2.5 px-4 text-center font-medium">Party Bundle</th>
                                 </tr>
                             </thead>
                             <tbody id="zipRegistryTableBody" class="divide-y divide-slate-100">
@@ -625,15 +785,15 @@
     </main>
 
     <!-- Modal: Add / Edit Block Item -->
-    <div id="blockItemModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-100 transform transition-all">
-            <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+    <div id="blockItemModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full border border-slate-200 overflow-hidden transform transition-all">
+            <div class="px-6 py-4 bg-white border-b border-slate-200 text-slate-900 flex items-center justify-between">
                 <div class="flex items-center space-x-2">
-                    <i class="fa-solid fa-pen-to-square text-indigo-400"></i>
-                    <h3 id="blockModalTitle" class="font-bold text-sm">Add / Edit Party</h3>
+                    <i class="fa-regular fa-pen-to-square text-indigo-600"></i>
+                    <h3 id="blockModalTitle" class="font-semibold text-sm text-slate-900">Add / Edit Party</h3>
                 </div>
-                <button onclick="closeBlockItemModal()" class="text-slate-400 hover:text-white transition">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <button onclick="closeBlockItemModal()" class="text-slate-400 hover:text-slate-700 transition">
+                    <i class="fa-solid fa-xmark text-base"></i>
                 </button>
             </div>
             <form id="blockItemForm" onsubmit="handleBlockItemFormSubmit(event)" class="p-6 space-y-4 text-xs">
@@ -641,47 +801,47 @@
                 <input type="hidden" id="formBlockItemId">
 
                 <div>
-                    <label class="block font-semibold text-slate-700 mb-1">Party Name *</label>
-                    <input type="text" id="formBlockPartyName" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. 101-BHARVITA or 235 LONDON BELLY">
+                    <label class="block font-medium text-slate-800 mb-1">Party Name *</label>
+                    <input type="text" id="formBlockPartyName" required class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-indigo-500 focus:outline-none text-slate-900 font-medium" placeholder="e.g. 101-BHARVITA or 235 LONDON BELLY">
                 </div>
 
                 <div>
-                    <label class="block font-semibold text-slate-700 mb-1">Invoice Range</label>
-                    <input type="text" id="formBlockInvoiceRange" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. AJ27S101-28767-29847 or MY27S235-194-364">
+                    <label class="block font-medium text-slate-800 mb-1">Invoice Range</label>
+                    <input type="text" id="formBlockInvoiceRange" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-indigo-500 focus:outline-none text-slate-900 font-medium font-mono" placeholder="e.g. AJ27S101-28767-29847 or MY27S235-194-364">
                 </div>
 
                 <div>
-                    <label class="block font-semibold text-slate-700 mb-1">Status</label>
-                    <select id="formBlockStatus" class="w-full px-3 py-2 border rounded-lg focus:outline-none bg-white">
+                    <label class="block font-medium text-slate-800 mb-1">Status</label>
+                    <select id="formBlockStatus" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none bg-white text-slate-900 font-medium">
                         <option value="">Pending (Blank)</option>
-                        <option value="DONE">DONE (Completed / Green)</option>
-                        <option value="NOT">NOT (Cancelled / Red)</option>
+                        <option value="DONE">DONE (Completed)</option>
+                        <option value="NOT">NOT (Cancelled)</option>
                     </select>
                 </div>
 
-                <div class="flex items-center justify-end space-x-3 pt-3 border-t">
-                    <button type="button" onclick="closeBlockItemModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition">Cancel</button>
-                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold shadow-md transition">Save</button>
+                <div class="flex items-center justify-end space-x-2.5 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeBlockItemModal()" class="px-3.5 py-1.5 text-slate-600 hover:bg-slate-100 rounded-lg font-normal transition">Cancel</button>
+                    <button type="submit" class="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium shadow-2xs transition">Save</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Custom Confirmation Modal (Replaces browser default popups) -->
-    <div id="customConfirmModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-100 overflow-hidden transform transition-all">
+    <!-- Custom Confirmation Modal -->
+    <div id="customConfirmModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full border border-slate-200 overflow-hidden transform transition-all">
             <div class="p-6 text-center">
-                <div id="customConfirmIconContainer" class="w-14 h-14 mx-auto mb-4 rounded-full flex items-center justify-center bg-rose-100 text-rose-600 text-2xl shadow-inner">
+                <div id="customConfirmIconContainer" class="w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center bg-rose-50 text-rose-600 text-xl border border-rose-200">
                     <i id="customConfirmIcon" class="fa-solid fa-triangle-exclamation"></i>
                 </div>
-                <h3 id="customConfirmTitle" class="text-base font-bold text-slate-900 mb-2">Are you sure?</h3>
-                <p id="customConfirmMessage" class="text-xs text-slate-500 leading-relaxed mb-6 whitespace-pre-line">This action cannot be undone.</p>
+                <h3 id="customConfirmTitle" class="text-sm font-semibold text-slate-900 mb-1.5">Are you sure?</h3>
+                <p id="customConfirmMessage" class="text-xs text-slate-500 leading-relaxed mb-5 whitespace-pre-line">This action cannot be undone.</p>
                 
-                <div class="flex items-center justify-center space-x-3">
-                    <button type="button" id="customConfirmCancelBtn" class="w-1/2 py-2.5 px-4 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-xl transition">
+                <div class="flex items-center justify-center space-x-2.5">
+                    <button type="button" id="customConfirmCancelBtn" class="w-1/2 py-2 px-4 text-xs font-normal text-slate-700 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg transition">
                         Cancel
                     </button>
-                    <button type="button" id="customConfirmActionBtn" class="w-1/2 py-2.5 px-4 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 active:scale-95 rounded-xl shadow-md shadow-rose-600/30 transition">
+                    <button type="button" id="customConfirmActionBtn" class="w-1/2 py-2 px-4 text-xs font-medium text-white bg-rose-600 hover:bg-rose-500 active:scale-95 rounded-lg shadow-2xs transition">
                         Confirm
                     </button>
                 </div>

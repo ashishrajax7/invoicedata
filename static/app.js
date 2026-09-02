@@ -9,7 +9,7 @@ let appData = {
     filename: 'Combined (All 3 Files)',
     is_combined: true,
     available_files: [],
-    active_file: '__all__,',
+    active_file: '__all__',
     detailed_rows: [],
     block_sheets: {
         'Short List': [],
@@ -19,7 +19,8 @@ let appData = {
     stats: {}
 };
 
-let activeTab = 'shortlist';
+let activeTab = 'zipbundles';
+let activeSummarySubTab = 'shortlist';
 let sheetFilters = {
     'Short List': 'all',
     'Party Details': 'all',
@@ -107,6 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {}
 
     // 2. Fast background sync with server
+    switchTab('zipbundles');
     loadData(appData.active_file || '__all__', false);
     loadZipStatus(false);
 
@@ -233,9 +235,16 @@ function setUnsavedState(dirty = true) {
 }
 
 function switchTab(tabId) {
+    // If old platform tab id passed, redirect into unified invoice summary tab with that subtab
+    if (['shortlist', 'partydetails', 'summary'].includes(tabId)) {
+        switchTab('invoicesummary');
+        switchSummarySubTab(tabId);
+        return;
+    }
+
     activeTab = tabId;
     document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active', 'text-purple-700', 'bg-purple-50', 'border-purple-200', 'text-blue-700', 'bg-blue-50', 'border-blue-200', 'text-amber-700', 'bg-amber-50', 'border-amber-200', 'text-slate-900', 'bg-slate-100');
+        btn.classList.remove('active', 'text-indigo-700', 'bg-indigo-50', 'border-indigo-200', 'text-emerald-700', 'bg-emerald-50', 'border-emerald-200', 'text-slate-900', 'bg-slate-100');
         btn.classList.add('text-slate-600');
     });
 
@@ -244,14 +253,12 @@ function switchTab(tabId) {
     const activeBtn = document.getElementById(`tab-${tabId}`);
     if (activeBtn) {
         activeBtn.classList.remove('text-slate-600');
-        if (tabId === 'shortlist') {
-            activeBtn.classList.add('active', 'text-purple-700', 'bg-purple-50', 'border-purple-200');
-        } else if (tabId === 'partydetails') {
-            activeBtn.classList.add('active', 'text-blue-700', 'bg-blue-50', 'border-blue-200');
-        } else if (tabId === 'summary') {
-            activeBtn.classList.add('active', 'text-amber-700', 'bg-amber-50', 'border-amber-200');
-        } else if (tabId === 'zipbundles') {
+        if (tabId === 'zipbundles') {
             activeBtn.classList.add('active', 'text-indigo-700', 'bg-indigo-50', 'border-indigo-200');
+        } else if (tabId === 'invoicesummary') {
+            activeBtn.classList.add('active', 'text-emerald-700', 'bg-emerald-50', 'border-emerald-200');
+        } else if (tabId === 'files') {
+            activeBtn.classList.add('active', 'text-slate-900', 'bg-slate-100');
         } else {
             activeBtn.classList.add('active', 'text-slate-900', 'bg-slate-100');
         }
@@ -264,17 +271,67 @@ function switchTab(tabId) {
         loadZipStatus(false);
     }
 
+    updateAddBtnLabel();
+}
+
+function switchSummarySubTab(subTabId) {
+    activeSummarySubTab = subTabId;
+
+    ['shortlist', 'partydetails', 'summary', 'uploadbox'].forEach(st => {
+        const btn = document.getElementById(`subtab-${st}`);
+        const panel = document.getElementById(`subpanel-${st}`);
+        if (btn) {
+            btn.classList.remove('active', 'bg-purple-600', 'bg-blue-600', 'bg-amber-600', 'bg-emerald-600', 'text-white', 'shadow-xs');
+            btn.classList.add('text-slate-600');
+        }
+        if (panel) panel.classList.add('hidden');
+    });
+
+    const activeBtn = document.getElementById(`subtab-${subTabId}`);
+    const activeSubpanel = document.getElementById(`subpanel-${subTabId}`);
+
+    if (activeBtn) {
+        activeBtn.classList.remove('text-slate-600');
+        activeBtn.classList.add('active', 'text-white', 'shadow-xs');
+        if (subTabId === 'shortlist') activeBtn.classList.add('bg-purple-600');
+        else if (subTabId === 'partydetails') activeBtn.classList.add('bg-blue-600');
+        else if (subTabId === 'summary') activeBtn.classList.add('bg-amber-600');
+        else if (subTabId === 'uploadbox') activeBtn.classList.add('bg-emerald-600');
+    }
+
+    if (activeSubpanel) {
+        activeSubpanel.classList.remove('hidden');
+    }
+
+    updateAddBtnLabel();
+}
+
+function updateAddBtnLabel() {
     const addBtnLabel = document.getElementById('addBtnLabel');
-    if (addBtnLabel) {
-        if (tabId === 'shortlist') addBtnLabel.textContent = 'Add to AJIO';
-        else if (tabId === 'partydetails') addBtnLabel.textContent = 'Add to Myntra';
-        else if (tabId === 'summary') addBtnLabel.textContent = 'Add to Flipkart';
+    if (!addBtnLabel) return;
+    if (activeTab === 'invoicesummary') {
+        if (activeSummarySubTab === 'shortlist') addBtnLabel.textContent = 'Add to AJIO';
+        else if (activeSummarySubTab === 'partydetails') addBtnLabel.textContent = 'Add to Myntra';
+        else if (activeSummarySubTab === 'summary') addBtnLabel.textContent = 'Add to Flipkart';
         else addBtnLabel.textContent = 'Add Party';
+    } else if (activeTab === 'shortlist') {
+        addBtnLabel.textContent = 'Add to AJIO';
+    } else if (activeTab === 'partydetails') {
+        addBtnLabel.textContent = 'Add to Myntra';
+    } else if (activeTab === 'summary') {
+        addBtnLabel.textContent = 'Add to Flipkart';
+    } else {
+        addBtnLabel.textContent = 'Add Party';
     }
 }
 
 function openAddModalForActiveTab() {
-    if (['shortlist', 'partydetails', 'summary'].includes(activeTab)) {
+    if (activeTab === 'invoicesummary') {
+        if (activeSummarySubTab === 'shortlist') openAddBlockItemModal('Short List');
+        else if (activeSummarySubTab === 'partydetails') openAddBlockItemModal('Party Details');
+        else if (activeSummarySubTab === 'summary') openAddBlockItemModal('Summary');
+        else openAddBlockItemModal('Short List');
+    } else if (['shortlist', 'partydetails', 'summary'].includes(activeTab)) {
         const sheetName = tabSheetMap[activeTab];
         openAddBlockItemModal(sheetName);
     } else {
@@ -282,28 +339,101 @@ function openAddModalForActiveTab() {
     }
 }
 
-function renderKPIs() {
-    const slItems = appData.block_sheets['Short List'] || [];
-    const slDone = slItems.filter(s => (s.status || '').toUpperCase() === 'DONE').length;
-    document.getElementById('kpiShortlistCount').textContent = slItems.length;
-    document.getElementById('kpiShortlistDone').textContent = `${slDone} Done`;
-    document.getElementById('kpiShortlistPending').textContent = `${slItems.length - slDone} Pending`;
-    document.getElementById('tabCountShortlist').textContent = `${slDone}/${slItems.length}`;
+function renderTopOverviewZipCounts() {
+    const platforms = (zipStatusData && zipStatusData.platforms) ? zipStatusData.platforms : {};
 
-    const pdItems = appData.block_sheets['Party Details'] || [];
+    // 1. AJIO
+    const ajio = platforms['AJIO'] || { parties: [] };
+    const ajioOd = ajio.od_count !== undefined ? ajio.od_count : (ajio.parties || []).filter(p => p.has_od || p.has_order_file).length;
+    const ajioTwoMore = ajio.two_more_count !== undefined ? ajio.two_more_count : (ajio.parties || []).filter(p => p.has_two_more_invoice).length;
+    const ajioDetails = ajio.details_count !== undefined ? ajio.details_count : (ajio.parties || []).filter(p => p.has_details).length;
+    const ajioSummary = ajio.summary_count !== undefined ? ajio.summary_count : (ajio.parties || []).filter(p => p.has_summary).length;
+
+    const elAjioOd = document.getElementById('ajioZipOdCount');
+    if (elAjioOd) elAjioOd.textContent = ajioOd;
+    const elAjio2M = document.getElementById('ajioZipTwoMoreCount');
+    if (elAjio2M) elAjio2M.textContent = ajioTwoMore;
+    const elAjioDet = document.getElementById('ajioZipDetailsCount');
+    if (elAjioDet) elAjioDet.textContent = ajioDetails;
+    const elAjioSum = document.getElementById('ajioZipSummaryCount');
+    if (elAjioSum) elAjioSum.textContent = ajioSummary;
+
+    // 2. MYNTRA
+    const myntra = platforms['MYNTRA'] || { parties: [] };
+    const myntraPr = myntra.pr_count !== undefined ? myntra.pr_count : (myntra.parties || []).filter(p => p.has_pr || p.has_order_file).length;
+    const myntraTwoMore = myntra.two_more_count !== undefined ? myntra.two_more_count : (myntra.parties || []).filter(p => p.has_two_more_invoice).length;
+    const myntraDetails = myntra.details_count !== undefined ? myntra.details_count : (myntra.parties || []).filter(p => p.has_details).length;
+    const myntraSummary = myntra.summary_count !== undefined ? myntra.summary_count : (myntra.parties || []).filter(p => p.has_summary).length;
+
+    const elMynPr = document.getElementById('myntraZipPrCount');
+    if (elMynPr) elMynPr.textContent = myntraPr;
+    const elMyn2M = document.getElementById('myntraZipTwoMoreCount');
+    if (elMyn2M) elMyn2M.textContent = myntraTwoMore;
+    const elMynDet = document.getElementById('myntraZipDetailsCount');
+    if (elMynDet) elMynDet.textContent = myntraDetails;
+    const elMynSum = document.getElementById('myntraZipSummaryCount');
+    if (elMynSum) elMynSum.textContent = myntraSummary;
+
+    // 3. FLIPKART
+    const fk = platforms['FLIPKART'] || { parties: [] };
+    const fkPr = fk.pr_count !== undefined ? fk.pr_count : (fk.parties || []).filter(p => p.has_pr || p.has_order_file).length;
+    const fkTwoMore = fk.two_more_count !== undefined ? fk.two_more_count : (fk.parties || []).filter(p => p.has_two_more_invoice).length;
+    const fkDetails = fk.details_count !== undefined ? fk.details_count : (fk.parties || []).filter(p => p.has_details).length;
+    const fkSummary = fk.summary_count !== undefined ? fk.summary_count : (fk.parties || []).filter(p => p.has_summary).length;
+
+    const elFkPr = document.getElementById('flipkartZipPrCount');
+    if (elFkPr) elFkPr.textContent = fkPr;
+    const elFk2M = document.getElementById('flipkartZipTwoMoreCount');
+    if (elFk2M) elFk2M.textContent = fkTwoMore;
+    const elFkDet = document.getElementById('flipkartZipDetailsCount');
+    if (elFkDet) elFkDet.textContent = fkDetails;
+    const elFkSum = document.getElementById('flipkartZipSummaryCount');
+    if (elFkSum) elFkSum.textContent = fkSummary;
+}
+
+function renderKPIs() {
+    const slItems = (appData.block_sheets && appData.block_sheets['Short List']) || [];
+    const slDone = slItems.filter(s => (s.status || '').toUpperCase() === 'DONE').length;
+    const elSlCount = document.getElementById('kpiShortlistCount');
+    if (elSlCount) elSlCount.textContent = slItems.length;
+    const elSlDone = document.getElementById('kpiShortlistDone');
+    if (elSlDone) elSlDone.textContent = `${slDone} Done`;
+    const elSlPending = document.getElementById('kpiShortlistPending');
+    if (elSlPending) elSlPending.textContent = `${slItems.length - slDone} Pending`;
+
+    const subCountSl = document.getElementById('subtabCountShortlist');
+    if (subCountSl) subCountSl.textContent = `${slDone}/${slItems.length}`;
+
+    const pdItems = (appData.block_sheets && appData.block_sheets['Party Details']) || [];
     const pdDone = pdItems.filter(s => (s.status || '').toUpperCase() === 'DONE').length;
     const pdNot = pdItems.filter(s => (s.status || '').toUpperCase() === 'NOT').length;
-    document.getElementById('kpiPartyDetailsCount').textContent = pdItems.length;
-    document.getElementById('kpiPartyDetailsDone').textContent = `${pdDone} Done`;
-    document.getElementById('kpiPartyDetailsNot').textContent = `${pdNot} Not`;
-    document.getElementById('tabCountPartyDetails').textContent = `${pdDone}/${pdItems.length}`;
+    const elPdCount = document.getElementById('kpiPartyDetailsCount');
+    if (elPdCount) elPdCount.textContent = pdItems.length;
+    const elPdDone = document.getElementById('kpiPartyDetailsDone');
+    if (elPdDone) elPdDone.textContent = `${pdDone} Done`;
+    const elPdNot = document.getElementById('kpiPartyDetailsNot');
+    if (elPdNot) elPdNot.textContent = `${pdNot} Not`;
 
-    const smItems = appData.block_sheets['Summary'] || [];
+    const subCountPd = document.getElementById('subtabCountPartyDetails');
+    if (subCountPd) subCountPd.textContent = `${pdDone}/${pdItems.length}`;
+
+    const smItems = (appData.block_sheets && appData.block_sheets['Summary']) || [];
     const smDone = smItems.filter(s => (s.status || '').toUpperCase() === 'DONE').length;
-    document.getElementById('kpiSummaryCount').textContent = smItems.length;
-    document.getElementById('kpiSummaryDone').textContent = `${smDone} Done`;
-    document.getElementById('kpiSummaryPending').textContent = `${smItems.length - smDone} Pending`;
-    document.getElementById('tabCountSummary').textContent = `${smDone}/${smItems.length}`;
+    const elSmCount = document.getElementById('kpiSummaryCount');
+    if (elSmCount) elSmCount.textContent = smItems.length;
+    const elSmDone = document.getElementById('kpiSummaryDone');
+    if (elSmDone) elSmDone.textContent = `${smDone} Done`;
+    const elSmPending = document.getElementById('kpiSummaryPending');
+    if (elSmPending) elSmPending.textContent = `${smItems.length - smDone} Pending`;
+
+    const subCountSm = document.getElementById('subtabCountSummary');
+    if (subCountSm) subCountSm.textContent = `${smDone}/${smItems.length}`;
+
+    const totalSummaryCount = slItems.length + pdItems.length + smItems.length;
+    const elTabSummaryCount = document.getElementById('tabCountInvoiceSummary');
+    if (elTabSummaryCount) elTabSummaryCount.textContent = `${totalSummaryCount}`;
+
+    renderTopOverviewZipCounts();
 }
 
 function renderAllSheets() {
@@ -319,9 +449,9 @@ function setBlockFilter(sheetName, filterType) {
         const btn = document.getElementById(`filter-${prefix}-${f}`);
         if (btn) {
             if (f === filterType) {
-                btn.className = 'px-2.5 py-1 rounded-md font-medium bg-slate-800 text-white transition';
+                btn.className = 'px-2.5 py-1 rounded-md font-medium bg-slate-900 text-white transition shadow-2xs';
             } else {
-                btn.className = 'px-2.5 py-1 rounded-md font-medium text-slate-600 hover:bg-slate-100 transition';
+                btn.className = 'px-2.5 py-1 rounded-md font-normal text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition';
             }
         }
     });
@@ -378,30 +508,29 @@ function renderBlockSheet(sheetName, containerId) {
         const isRangeNotFound = (item.invoice_range || '').toLowerCase().includes('notfound') || (item.invoice_range || '').toUpperCase() === 'N/A';
 
         const card = document.createElement('div');
-        
-        let cardTheme = 'bg-white border-slate-200/90 hover:border-slate-300 shadow-xs';
+           let cardTheme = 'bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs';
         let statusBadgeHtml = `
-            <button onclick="cycleBlockItemStatus('${sheetName}', ${item.id})" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100/90 text-slate-600 border border-slate-200 hover:bg-slate-200/80 transition active:scale-95 cursor-pointer" title="Click to change status">
-                <i class="fa-regular fa-circle text-[10px] text-slate-400"></i>
+            <button onclick="cycleBlockItemStatus('${sheetName}', ${item.id})" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-100/80 text-slate-600 border border-slate-200/80 hover:bg-slate-200/60 transition active:scale-95 cursor-pointer" title="Click to change status">
+                <i class="fa-regular fa-circle text-[9px] text-slate-400"></i>
                 <span>PENDING</span>
             </button>
         `;
 
         if (isDone) {
-            cardTheme = 'bg-gradient-to-br from-emerald-50/90 via-white to-emerald-50/50 border-emerald-300/90 ring-1 ring-emerald-400/20 shadow-xs';
+            cardTheme = 'bg-white border-emerald-300 ring-1 ring-emerald-400/20 shadow-2xs';
             statusBadgeHtml = `
-                <button onclick="cycleBlockItemStatus('${sheetName}', ${item.id})" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-100/90 text-emerald-800 border border-emerald-300 shadow-2xs hover:bg-emerald-200 transition active:scale-95 cursor-pointer" title="Click to change status">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 pulse-dot"></span>
-                    <i class="fa-solid fa-check text-[11px] text-emerald-700"></i>
+                <button onclick="cycleBlockItemStatus('${sheetName}', ${item.id})" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs hover:bg-emerald-100 transition active:scale-95 cursor-pointer" title="Click to change status">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <i class="fa-solid fa-check text-[10px] text-emerald-600"></i>
                     <span>DONE</span>
                 </button>
             `;
         } else if (isNot) {
-            cardTheme = 'bg-gradient-to-br from-rose-50/90 via-white to-rose-50/50 border-rose-300/90 ring-1 ring-rose-400/20 shadow-xs';
+            cardTheme = 'bg-white border-rose-300 ring-1 ring-rose-400/20 shadow-2xs';
             statusBadgeHtml = `
-                <button onclick="cycleBlockItemStatus('${sheetName}', ${item.id})" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-100/90 text-rose-800 border border-rose-300 shadow-2xs hover:bg-rose-200 transition active:scale-95 cursor-pointer" title="Click to change status">
-                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-                    <i class="fa-solid fa-xmark text-[11px] text-rose-700"></i>
+                <button onclick="cycleBlockItemStatus('${sheetName}', ${item.id})" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs hover:bg-rose-100 transition active:scale-95 cursor-pointer" title="Click to change status">
+                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                    <i class="fa-solid fa-xmark text-[10px] text-rose-600"></i>
                     <span>NOT</span>
                 </button>
             `;
@@ -419,28 +548,35 @@ function renderBlockSheet(sheetName, containerId) {
             let pills = [];
             const hasOrd = zipParty.has_order_file || (isPRPlat ? zipParty.has_pr : zipParty.has_od) || zipParty.has_od || zipParty.has_pr;
             const ordLabel = isPRPlat ? 'PR' : 'OD';
-            if (hasOrd) pills.push(`<span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded" title="${ordLabel} File Attached">${ordLabel}</span>`);
-            if (zipParty.has_two_more_invoice) pills.push('<span class="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded" title="2 More Invoice Attached">2M</span>');
-            if (zipParty.has_details) pills.push('<span class="text-[9px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded" title="Details Sheet Attached">DT</span>');
-            if (zipParty.has_summary) pills.push('<span class="text-[9px] bg-purple-100 text-purple-800 font-bold px-1.5 py-0.5 rounded" title="Summary Sheet Attached">SM</span>');
+            if (hasOrd) pills.push(`<span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded border border-emerald-300" title="${ordLabel} File Attached">${ordLabel}</span>`);
+            if (zipParty.has_two_more_invoice) pills.push('<span class="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded border border-amber-300" title="2 More Invoice Attached">2M</span>');
+            if (zipParty.has_details) pills.push('<span class="text-[9px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded border border-blue-300" title="Details Sheet Attached">DT</span>');
+            if (zipParty.has_summary) pills.push('<span class="text-[9px] bg-purple-100 text-purple-800 font-bold px-1.5 py-0.5 rounded border border-purple-300" title="Summary Sheet Attached">SM</span>');
             if (pills.length > 0) {
                 zipPillsHtml = `
-                    <div class="mt-1.5 flex items-center justify-between text-[10px] bg-slate-50/80 px-2 py-1 rounded-lg border border-slate-100">
-                        <span class="text-slate-400 font-semibold flex items-center gap-1"><i class="fa-solid fa-file-zipper text-indigo-500"></i> ZIP:</span>
+                    <div class="mt-1.5 flex items-center justify-between text-[10px] bg-indigo-50/50 px-2 py-1 rounded-md border border-indigo-100/70">
+                        <span class="text-indigo-700 font-semibold flex items-center gap-1"><i class="fa-solid fa-file-zipper text-indigo-600"></i> ZIP:</span>
                         <div class="flex items-center gap-1">${pills.join('')}</div>
                     </div>
                 `;
             }
         }
 
-        card.className = `party-card group relative p-4 rounded-2xl border transition-all duration-200 select-none flex flex-col justify-between min-h-[135px] ${cardTheme}`;
+        let nameColor = 'text-slate-900';
+        if (sheetName === 'Short List') nameColor = 'text-purple-950 hover:text-purple-700';
+        else if (sheetName === 'Party Details') nameColor = 'text-blue-950 hover:text-blue-700';
+        else if (sheetName === 'Summary') nameColor = 'text-amber-950 hover:text-amber-700';
+        if (isDone) nameColor = 'text-emerald-950';
+        else if (isNot) nameColor = 'text-rose-950';
+
+        card.className = `party-card group relative p-3.5 rounded-xl border transition-all duration-200 select-none flex flex-col justify-between min-h-[130px] ${cardTheme}`;
 
         card.innerHTML = `
             <div>
                 <!-- Top Row: Party Name & Status Badge -->
-                <div class="flex items-start justify-between gap-2.5">
+                <div class="flex items-start justify-between gap-2">
                     <div class="flex-1 min-w-0">
-                        <div class="font-extrabold text-sm tracking-tight leading-snug ${isDone ? 'text-emerald-950' : isNot ? 'text-rose-950' : 'text-slate-900'} editable-cell px-1.5 py-0.5"
+                        <div class="font-bold text-sm tracking-tight leading-snug ${nameColor} dark-crisp editable-cell px-1.5 py-0.5 transition"
                              contenteditable="true"
                              onblur="handleBlockItemEdit('${sheetName}', ${item.id}, 'party_name', this.innerText)"
                              onkeydown="handleCellKeydown(event, this)">
@@ -453,55 +589,55 @@ function renderBlockSheet(sheetName, containerId) {
                 </div>
 
                 <!-- Middle Row: Invoice Range Monospace Container -->
-                <div class="mt-2.5 flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-slate-50/90 border border-slate-200/70 text-xs font-mono">
+                <div class="mt-2 flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-indigo-50/60 border border-indigo-100 text-xs font-mono">
                     <div class="flex items-center gap-1.5 min-w-0 flex-1">
-                        <i class="fa-solid fa-barcode text-xs ${isDone ? 'text-emerald-600' : isNot ? 'text-rose-600' : 'text-slate-400'}"></i>
-                        <span class="${isRangeNotFound ? 'text-rose-500 italic font-semibold' : 'text-slate-700 font-semibold'} truncate editable-cell px-1 py-0.5"
+                        <i class="fa-solid fa-barcode text-xs ${isDone ? 'text-emerald-600' : isNot ? 'text-rose-600' : 'text-indigo-500'}"></i>
+                        <span class="${isRangeNotFound ? 'text-rose-600 font-bold italic' : 'text-indigo-950 font-bold'} truncate editable-cell px-1 py-0.5"
                               contenteditable="true"
                               onblur="handleBlockItemEdit('${sheetName}', ${item.id}, 'invoice_range', this.innerText)"
                               onkeydown="handleCellKeydown(event, this)">
                             ${escapeHtml(item.invoice_range || 'N/A')}
                         </span>
                     </div>
-                    <span class="text-[10px] font-sans font-medium text-slate-400 shrink-0 ml-1">#${item.id}</span>
+                    <span class="text-[10px] font-sans font-semibold text-indigo-400 shrink-0 ml-1">#${item.id}</span>
                 </div>
 
                 ${zipPillsHtml}
             </div>
 
             <!-- Bottom Row: Quick Status Triggers & Actions -->
-            <div class="flex items-center justify-between pt-2.5 mt-2.5 border-t border-slate-100 text-xs">
+            <div class="flex items-center justify-between pt-2 mt-2 border-t border-slate-100 text-xs">
                 <!-- Status Toggle Buttons -->
                 <div class="flex items-center gap-1">
                     <button onclick="cycleBlockItemStatus('${sheetName}', ${item.id}, 'DONE')" 
-                            class="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition active:scale-95 ${isDone ? 'bg-emerald-600 text-white shadow-2xs' : 'text-emerald-700 hover:bg-emerald-100/80 bg-emerald-50/60'}" 
+                            class="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium transition active:scale-95 ${isDone ? 'bg-emerald-600 text-white shadow-2xs' : 'text-emerald-700 hover:bg-emerald-100/80 bg-emerald-50/60 border border-emerald-200/60'}" 
                             title="Mark as Done">
-                        <i class="fa-solid fa-check text-[11px]"></i>
+                        <i class="fa-solid fa-check text-[10px]"></i>
                         <span>Done</span>
                     </button>
                     
                     <button onclick="cycleBlockItemStatus('${sheetName}', ${item.id}, 'NOT')" 
-                            class="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition active:scale-95 ${isNot ? 'bg-rose-600 text-white shadow-2xs' : 'text-rose-700 hover:bg-rose-100/80 bg-rose-50/60'}" 
+                            class="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium transition active:scale-95 ${isNot ? 'bg-rose-600 text-white shadow-2xs' : 'text-rose-700 hover:bg-rose-100/80 bg-rose-50/60 border border-rose-200/60'}" 
                             title="Mark as Not">
-                        <i class="fa-solid fa-xmark text-[11px]"></i>
+                        <i class="fa-solid fa-xmark text-[10px]"></i>
                         <span>Not</span>
                     </button>
 
                     <button onclick="cycleBlockItemStatus('${sheetName}', ${item.id}, '')" 
-                            class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition active:scale-95" 
-                            title="Reset to Pending">
-                        <i class="fa-solid fa-rotate-left text-[10px]"></i>
+                            class="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-normal text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition active:scale-95" 
+                            title="Clear Status">
+                        <i class="fa-regular fa-circle text-[9px]"></i>
                         <span>Reset</span>
                     </button>
                 </div>
 
-                <!-- Edit / Delete Tools -->
-                <div class="flex items-center gap-1 text-slate-400">
-                    <button onclick="openEditBlockItemModal('${sheetName}', ${item.id})" class="p-1.5 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="Edit in modal">
-                        <i class="fa-solid fa-pen-to-square text-xs"></i>
+                <!-- Card Action Icons -->
+                <div class="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition">
+                    <button onclick="openEditBlockModal('${sheetName}', ${item.id})" class="p-1 text-slate-400 hover:text-indigo-600 transition" title="Edit">
+                        <i class="fa-regular fa-pen-to-square text-xs"></i>
                     </button>
-                    <button onclick="deleteBlockItem('${sheetName}', ${item.id})" class="p-1.5 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Delete party">
-                        <i class="fa-solid fa-trash text-xs"></i>
+                    <button onclick="deleteBlockItem('${sheetName}', ${item.id})" class="p-1 text-slate-400 hover:text-rose-600 transition" title="Delete">
+                        <i class="fa-regular fa-trash-can text-xs"></i>
                     </button>
                 </div>
             </div>
@@ -991,23 +1127,23 @@ function showToast(message, type = 'info') {
 
     const toast = document.createElement('div');
     const bgColors = {
-        success: 'bg-emerald-800 text-white border-emerald-700',
-        error: 'bg-rose-800 text-white border-rose-700',
-        warning: 'bg-amber-800 text-white border-amber-700',
-        info: 'bg-slate-800 text-white border-slate-700'
+        success: 'bg-white text-emerald-900 border-emerald-200 shadow-lg',
+        error: 'bg-white text-rose-900 border-rose-200 shadow-lg',
+        warning: 'bg-white text-amber-900 border-amber-200 shadow-lg',
+        info: 'bg-white text-slate-900 border-slate-200 shadow-lg'
     };
 
     const icons = {
-        success: 'fa-circle-check text-emerald-400',
-        error: 'fa-circle-xmark text-rose-400',
-        warning: 'fa-triangle-exclamation text-amber-400',
-        info: 'fa-circle-info text-indigo-400'
+        success: 'fa-circle-check text-emerald-600',
+        error: 'fa-circle-xmark text-rose-600',
+        warning: 'fa-triangle-exclamation text-amber-600',
+        info: 'fa-circle-info text-indigo-600'
     };
 
-    toast.className = `toast-enter pointer-events-auto px-4 py-2.5 rounded-xl shadow-xl border text-xs flex items-center space-x-2.5 max-w-sm ${bgColors[type] || bgColors.info}`;
+    toast.className = `toast-enter pointer-events-auto px-3.5 py-2 rounded-lg shadow-lg border text-xs flex items-center space-x-2.5 max-w-sm ${bgColors[type] || bgColors.info}`;
     toast.innerHTML = `
         <i class="fa-solid ${icons[type] || icons.info} text-sm"></i>
-        <span class="font-medium flex-1">${escapeHtml(message)}</span>
+        <span class="font-medium flex-1 text-slate-800">${escapeHtml(message)}</span>
     `;
 
     container.appendChild(toast);
@@ -1084,18 +1220,45 @@ function switchZipPlatform(platform) {
         }
     }
 
-    // Dynamic Slot 1 Labels based on platform
-    const slot1Title = document.getElementById('zipSlot1Title');
-    if (slot1Title) slot1Title.textContent = isPR ? 'Processed ZIP (PR + 2 More)' : 'Order ZIP (OD + 2 More)';
+    // Dynamic Slot 1 Labels based on platform across all sections
+    document.querySelectorAll('.zipSlot1Title, #zipSlot1Title').forEach(el => {
+        el.textContent = isPR ? 'Processed ZIP (PR + 2 More)' : 'Order ZIP (OD + 2 More)';
+    });
 
-    const slot1Desc = document.getElementById('zipSlot1Desc');
-    if (slot1Desc) {
+    document.querySelectorAll('.zipSlot1Desc, #zipSlot1Desc').forEach(el => {
         const exampleZip = isPR ? '139-157 process.zip' : '101-157_processed.zip';
-        slot1Desc.innerHTML = `Upload processed zip (e.g. <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-700">${exampleZip}</code>). Auto-saves ${orderTypeLabel} and 2 More Invoice (optional).`;
-    }
+        el.innerHTML = `Upload processed zip (e.g. <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-700">${exampleZip}</code>). Auto-saves ${orderTypeLabel} and 2 More Invoice (optional).`;
+    });
 
-    const slot1DropText = document.getElementById('zipSlot1DropText');
-    if (slot1DropText) slot1DropText.textContent = `Select or Drop ${isPR ? 'Processed' : 'Order'} .zip (${orderTypeLabel} file)`;
+    document.querySelectorAll('.zipSlot1DropText, #zipSlot1DropText').forEach(el => {
+        el.textContent = `Select or Drop ${isPR ? 'Processed' : 'Order'} .zip (${orderTypeLabel} file)`;
+    });
+
+    // Update secondary platform switcher buttons
+    ['AJIO', 'MYNTRA', 'FLIPKART'].forEach(p => {
+        const btn = document.getElementById(`filesZipBtn-${p}`);
+        if (btn) {
+            if (p === zipActivePlatform) {
+                if (p === 'AJIO') btn.className = 'filesZipPlatBtn px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-purple-600 text-white shadow-xs';
+                else if (p === 'MYNTRA') btn.className = 'filesZipPlatBtn px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-blue-600 text-white shadow-xs';
+                else btn.className = 'filesZipPlatBtn px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-amber-600 text-white shadow-xs';
+            } else {
+                btn.className = 'filesZipPlatBtn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5';
+            }
+        }
+    });
+
+    const filesBadge = document.getElementById('filesZipPlatformBadge');
+    if (filesBadge) {
+        filesBadge.textContent = zipActivePlatform;
+        if (zipActivePlatform === 'AJIO') {
+            filesBadge.className = 'text-xs bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full font-bold';
+        } else if (zipActivePlatform === 'MYNTRA') {
+            filesBadge.className = 'text-xs bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full font-bold';
+        } else {
+            filesBadge.className = 'text-xs bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full font-bold';
+        }
+    }
 
     const kpiODLabel = document.getElementById('zipKpiODLabel');
     if (kpiODLabel) kpiODLabel.textContent = `${orderTypeLabel} Files`;
@@ -1131,6 +1294,7 @@ async function loadZipStatus(showToastMsg = false) {
             }
 
             renderZipPlatformKPIs();
+            renderTopOverviewZipCounts();
             populatePartySelectorDropdown();
             renderZipRegistryTable();
             renderAllSheets(); // re-render checklist cards with zip badges
@@ -1186,7 +1350,7 @@ function populatePartySelectorDropdown() {
         const opt = document.createElement('option');
         opt.value = p.party_code;
         const displayName = p.party_name ? `${p.party_code} - ${p.party_name}` : `Party ${p.party_code}`;
-        const statusMark = p.is_complete ? '✅' : (p.has_order_file || p.has_od || p.has_pr || p.has_details || p.has_summary) ? '⚡' : '⏳';
+        const statusMark = p.is_complete ? '[Ready]' : (p.has_order_file || p.has_od || p.has_pr || p.has_details || p.has_summary) ? '[Partial]' : '[Pending]';
         opt.textContent = `${statusMark} ${displayName}`;
         if (p.party_code === currentPipelinePartyCode) {
             opt.selected = true;
@@ -1202,10 +1366,15 @@ async function uploadPlatformZip(slotType, file) {
         return;
     }
 
-    const statusEl = document.getElementById(`zipUploadStatus-${slotType}`);
-    if (statusEl) {
-        statusEl.innerHTML = `<span class="text-indigo-600 font-semibold flex items-center gap-1.5"><i class="fa-solid fa-spinner fa-spin"></i> Uploading & extracting ${escapeHtml(file.name)}...</span>`;
-    }
+    const setStatusHtml = (html) => {
+        const el1 = document.getElementById(`zipUploadStatus-${slotType}`);
+        if (el1) el1.innerHTML = html;
+        document.querySelectorAll(`.zipUploadStatus-${slotType}`).forEach(el => {
+            el.innerHTML = html;
+        });
+    };
+
+    setStatusHtml(`<span class="text-indigo-600 font-semibold flex items-center gap-1.5"><i class="fa-solid fa-spinner fa-spin"></i> Uploading & extracting ${escapeHtml(file.name)}...</span>`);
 
     const formData = new FormData();
     formData.append('platform', zipActivePlatform);
@@ -1220,9 +1389,7 @@ async function uploadPlatformZip(slotType, file) {
         const result = await res.json();
         
         if (result.success) {
-            if (statusEl) {
-                statusEl.innerHTML = `<span class="text-emerald-600 font-bold flex items-center gap-1"><i class="fa-solid fa-check"></i> ${escapeHtml(result.message)}</span>`;
-            }
+            setStatusHtml(`<span class="text-emerald-600 font-bold flex items-center gap-1"><i class="fa-solid fa-check"></i> ${escapeHtml(result.message)}</span>`);
             showToast(result.message || 'ZIP uploaded successfully!', 'success');
             await loadZipStatus(false);
             
@@ -1233,16 +1400,12 @@ async function uploadPlatformZip(slotType, file) {
                 selectPartyForPipeline(currentPipelinePartyCode);
             }
         } else {
-            if (statusEl) {
-                statusEl.innerHTML = `<span class="text-rose-600 font-bold flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> ${escapeHtml(result.error || 'Upload failed')}</span>`;
-            }
+            setStatusHtml(`<span class="text-rose-600 font-bold flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> ${escapeHtml(result.error || 'Upload failed')}</span>`);
             showToast(result.error || 'Failed to process ZIP', 'error');
         }
     } catch (e) {
         console.error(e);
-        if (statusEl) {
-            statusEl.innerHTML = `<span class="text-rose-600 font-bold">Network error during upload</span>`;
-        }
+        setStatusHtml(`<span class="text-rose-600 font-bold">Network error during upload</span>`);
         showToast('Network error uploading ZIP', 'error');
     }
 }
@@ -1254,8 +1417,8 @@ async function selectPartyForPipeline(partyCode) {
 
     if (!partyCode) {
         container.innerHTML = `
-            <div class="bg-slate-800/80 rounded-xl p-3.5 border border-slate-700/80 text-center text-slate-400 italic col-span-full py-6">
-                <i class="fa-solid fa-arrow-pointer mb-2 text-xl text-indigo-400"></i>
+            <div class="bg-slate-50 rounded-xl p-4 border border-slate-200/80 text-center text-slate-500 italic col-span-full py-6">
+                <i class="fa-regular fa-hand-pointer mb-2 text-xl text-slate-400"></i>
                 <p>Select a party code from the dropdown above to test file linking and automated dispatch.</p>
             </div>
         `;
@@ -1263,8 +1426,8 @@ async function selectPartyForPipeline(partyCode) {
     }
 
     container.innerHTML = `
-        <div class="col-span-full text-center py-4 text-indigo-300">
-            <i class="fa-solid fa-spinner fa-spin text-lg mr-2"></i> Fetching linked files for Party ${escapeHtml(partyCode)}...
+        <div class="col-span-full text-center py-4 text-indigo-600 font-medium">
+            <i class="fa-solid fa-spinner fa-spin text-base mr-2"></i> Fetching linked files for Party ${escapeHtml(partyCode)}...
         </div>
     `;
 
@@ -1273,7 +1436,7 @@ async function selectPartyForPipeline(partyCode) {
         const json = await res.json();
         
         if (!json.success || !json.data) {
-            container.innerHTML = `<div class="col-span-full text-center text-rose-400">Error loading files for party ${escapeHtml(partyCode)}</div>`;
+            container.innerHTML = `<div class="col-span-full text-center text-rose-500 font-medium">Error loading files for party ${escapeHtml(partyCode)}</div>`;
             return;
         }
 
@@ -1286,116 +1449,117 @@ async function selectPartyForPipeline(partyCode) {
 
         container.innerHTML = `
             <!-- Header for Selected Party -->
-            <div class="col-span-full flex flex-wrap items-center justify-between pb-2 border-b border-slate-700/80 gap-2">
-                <div class="flex items-center space-x-2">
-                    <span class="text-sm font-extrabold text-white">${escapeHtml(pTitle)}</span>
-                    <span class="text-[10px] ${b.is_complete ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-amber-500/20 text-amber-300 border-amber-500/40'} px-2 py-0.5 rounded-full font-bold border">
-                        ${b.is_complete ? '✅ All Core Files Ready' : '⚡ Partial Files Attached'}
+            <div class="col-span-full flex flex-wrap items-center justify-between pb-2.5 border-b border-indigo-100 gap-2">
+                <div class="flex items-center space-x-2.5">
+                    <span class="text-sm font-bold text-indigo-950">${escapeHtml(pTitle)}</span>
+                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-md border ${b.is_complete ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-amber-100 text-amber-800 border-amber-300'}">
+                        <i class="fa-solid ${b.is_complete ? 'fa-circle-check text-emerald-600' : 'fa-circle-exclamation text-amber-600'} text-[10px] mr-1"></i>
+                        ${b.is_complete ? 'All Core Files Ready' : 'Partial Files Attached'}
                     </span>
                 </div>
-                <a href="/api/zip/download_party_bundle/${b.platform}/${b.party_code}" class="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl shadow transition active:scale-95">
-                    <i class="fa-solid fa-download"></i>
+                <a href="/api/zip/download_party_bundle/${b.platform}/${b.party_code}" class="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg shadow-indigo-600/20 shadow-2xs transition active:scale-95">
+                    <i class="fa-solid fa-download text-xs"></i>
                     <span>Download All 4 as Bundle (.zip)</span>
                 </a>
             </div>
 
-            <!-- Slot 1: OD / PR File -->
-            <div class="bg-slate-800/90 rounded-xl p-3 border ${hasOrderFile ? 'border-emerald-500/50 bg-emerald-950/20' : 'border-slate-700'} flex flex-col justify-between">
+            <!-- Slot 1: OD / PR File (Emerald Theme) -->
+            <div class="bg-emerald-50/40 rounded-xl p-3.5 border ${hasOrderFile ? 'border-emerald-300' : 'border-emerald-100'} shadow-2xs flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-1.5">
-                        <span class="font-bold text-slate-300 flex items-center gap-1">
-                            <i class="fa-solid fa-file-invoice ${hasOrderFile ? 'text-emerald-400' : 'text-slate-500'}"></i> 1. ${ordType} File
+                        <span class="font-bold text-emerald-950 flex items-center gap-1.5 text-xs">
+                            <i class="fa-regular fa-file-invoice ${hasOrderFile ? 'text-emerald-600' : 'text-slate-400'}"></i> 1. ${ordType} File
                         </span>
-                        <span class="text-[9px] px-1.5 py-0.5 rounded font-bold ${hasOrderFile ? 'bg-emerald-500/30 text-emerald-300' : 'bg-slate-700 text-slate-400'}">
+                        <span class="text-[10px] px-2 py-0.5 rounded font-bold ${hasOrderFile ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-50 text-rose-700 border border-rose-200'}">
                             ${hasOrderFile ? 'SAVED' : 'MISSING'}
                         </span>
                     </div>
-                    <div class="font-mono text-[11px] ${hasOrderFile ? 'text-emerald-200' : 'text-slate-500 italic'} truncate" title="${escapeHtml(targetOrderFile ? targetOrderFile.filename : 'Not available')}">
+                    <div class="font-mono text-xs ${hasOrderFile ? 'text-emerald-900 font-bold' : 'text-slate-400 italic'} truncate" title="${escapeHtml(targetOrderFile ? targetOrderFile.filename : 'Not available')}">
                         ${escapeHtml(targetOrderFile ? targetOrderFile.filename : `No ${ordType} file uploaded`)}
                     </div>
                 </div>
-                <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between">
-                    <span class="text-[10px] text-slate-400">${isPR ? 'Processed Sheet' : 'Order Sheet'}</span>
+                <div class="mt-2.5 pt-2 border-t border-emerald-100 flex items-center justify-between">
+                    <span class="text-[10px] text-emerald-700/80 font-medium">${isPR ? 'Processed Sheet' : 'Order Sheet'}</span>
                     ${hasOrderFile ? `
-                        <a href="${targetOrderFile.download_url}" class="text-[11px] text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1">
+                        <a href="${targetOrderFile.download_url}" class="text-xs text-emerald-700 hover:text-emerald-900 font-bold flex items-center gap-1">
                             <i class="fa-solid fa-download text-[10px]"></i> Download
                         </a>
-                    ` : `<span class="text-[10px] text-slate-500">Upload ${isPR ? 'Processed' : 'Order'} ZIP</span>`}
+                    ` : `<span class="text-[10px] text-slate-400">Upload ${isPR ? 'Processed' : 'Order'} ZIP</span>`}
                 </div>
             </div>
 
-            <!-- Slot 2: 2 More Invoice (Optional) -->
-            <div class="bg-slate-800/90 rounded-xl p-3 border ${b.has_two_more_invoice ? 'border-emerald-500/50 bg-emerald-950/20' : 'border-slate-700'} flex flex-col justify-between">
+            <!-- Slot 2: 2 More Invoice (Amber Theme) -->
+            <div class="bg-amber-50/40 rounded-xl p-3.5 border ${b.has_two_more_invoice ? 'border-amber-300' : 'border-amber-100'} shadow-2xs flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-1.5">
-                        <span class="font-bold text-slate-300 flex items-center gap-1">
-                            <i class="fa-solid fa-file-circle-plus ${b.has_two_more_invoice ? 'text-emerald-400' : 'text-slate-500'}"></i> 2. 2 More Invoice
+                        <span class="font-bold text-amber-950 flex items-center gap-1.5 text-xs">
+                            <i class="fa-regular fa-file-circle-plus ${b.has_two_more_invoice ? 'text-amber-600' : 'text-slate-400'}"></i> 2. 2 More Invoice
                         </span>
-                        <span class="text-[9px] px-1.5 py-0.5 rounded font-bold ${b.has_two_more_invoice ? 'bg-emerald-500/30 text-emerald-300' : 'bg-slate-700 text-slate-400'}">
+                        <span class="text-[10px] px-2 py-0.5 rounded font-bold ${b.has_two_more_invoice ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-slate-100 text-slate-500 border border-slate-200'}">
                             ${b.has_two_more_invoice ? 'PRESENT' : 'OPTIONAL (SKIPPED)'}
                         </span>
                     </div>
-                    <div class="font-mono text-[11px] ${b.has_two_more_invoice ? 'text-emerald-200' : 'text-slate-400 italic'} truncate" title="${escapeHtml(b.two_more_invoice ? b.two_more_invoice.filename : 'Not present in zip')}">
+                    <div class="font-mono text-xs ${b.has_two_more_invoice ? 'text-amber-900 font-bold' : 'text-slate-400 italic'} truncate" title="${escapeHtml(b.two_more_invoice ? b.two_more_invoice.filename : 'Not present in zip')}">
                         ${escapeHtml(b.two_more_invoice ? b.two_more_invoice.filename : 'None (Optional - Skipped)')}
                     </div>
                 </div>
-                <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between">
-                    <span class="text-[10px] text-slate-400">Invoice File</span>
+                <div class="mt-2.5 pt-2 border-t border-amber-100 flex items-center justify-between">
+                    <span class="text-[10px] text-amber-700/80 font-medium">Invoice File</span>
                     ${b.has_two_more_invoice ? `
-                        <a href="${b.two_more_invoice.download_url}" class="text-[11px] text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1">
+                        <a href="${b.two_more_invoice.download_url}" class="text-xs text-amber-700 hover:text-amber-900 font-bold flex items-center gap-1">
                             <i class="fa-solid fa-download text-[10px]"></i> Download
                         </a>
                     ` : `<span class="text-[10px] text-slate-400">Skipped Cleanly</span>`}
                 </div>
             </div>
 
-            <!-- Slot 3: Details File -->
-            <div class="bg-slate-800/90 rounded-xl p-3 border ${b.has_details ? 'border-blue-500/50 bg-blue-950/20' : 'border-slate-700'} flex flex-col justify-between">
+            <!-- Slot 3: Details File (Blue Theme) -->
+            <div class="bg-blue-50/40 rounded-xl p-3.5 border ${b.has_details ? 'border-blue-300' : 'border-blue-100'} shadow-2xs flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-1.5">
-                        <span class="font-bold text-slate-300 flex items-center gap-1">
-                            <i class="fa-solid fa-file-lines ${b.has_details ? 'text-blue-400' : 'text-slate-500'}"></i> 3. Details Sheet
+                        <span class="font-bold text-blue-950 flex items-center gap-1.5 text-xs">
+                            <i class="fa-regular fa-file-lines ${b.has_details ? 'text-blue-600' : 'text-slate-400'}"></i> 3. Details Sheet
                         </span>
-                        <span class="text-[9px] px-1.5 py-0.5 rounded font-bold ${b.has_details ? 'bg-blue-500/30 text-blue-300' : 'bg-slate-700 text-slate-400'}">
+                        <span class="text-[10px] px-2 py-0.5 rounded font-bold ${b.has_details ? 'bg-blue-100 text-blue-800 border border-blue-300' : 'bg-rose-50 text-rose-700 border border-rose-200'}">
                             ${b.has_details ? 'SAVED' : 'MISSING'}
                         </span>
                     </div>
-                    <div class="font-mono text-[11px] ${b.has_details ? 'text-blue-200' : 'text-slate-500 italic'} truncate" title="${escapeHtml(b.details_file ? b.details_file.filename : 'Not available')}">
+                    <div class="font-mono text-xs ${b.has_details ? 'text-blue-900 font-bold' : 'text-slate-400 italic'} truncate" title="${escapeHtml(b.details_file ? b.details_file.filename : 'Not available')}">
                         ${escapeHtml(b.details_file ? b.details_file.filename : 'No details file uploaded')}
                     </div>
                 </div>
-                <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between">
-                    <span class="text-[10px] text-slate-400">Details Bundle</span>
+                <div class="mt-2.5 pt-2 border-t border-blue-100 flex items-center justify-between">
+                    <span class="text-[10px] text-blue-700/80 font-medium">Details Bundle</span>
                     ${b.has_details ? `
-                        <a href="${b.details_file.download_url}" class="text-[11px] text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1">
+                        <a href="${b.details_file.download_url}" class="text-xs text-blue-700 hover:text-blue-900 font-bold flex items-center gap-1">
                             <i class="fa-solid fa-download text-[10px]"></i> Download
                         </a>
-                    ` : `<span class="text-[10px] text-slate-500">Upload Details ZIP</span>`}
+                    ` : `<span class="text-[10px] text-slate-400">Upload Details ZIP</span>`}
                 </div>
             </div>
 
-            <!-- Slot 4: Summary File -->
-            <div class="bg-slate-800/90 rounded-xl p-3 border ${b.has_summary ? 'border-purple-500/50 bg-purple-950/20' : 'border-slate-700'} flex flex-col justify-between">
+            <!-- Slot 4: Summary File (Purple Theme) -->
+            <div class="bg-purple-50/40 rounded-xl p-3.5 border ${b.has_summary ? 'border-purple-300' : 'border-purple-100'} shadow-2xs flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-1.5">
-                        <span class="font-bold text-slate-300 flex items-center gap-1">
-                            <i class="fa-solid fa-file-shield ${b.has_summary ? 'text-purple-400' : 'text-slate-500'}"></i> 4. Summary Sheet
+                        <span class="font-bold text-purple-950 flex items-center gap-1.5 text-xs">
+                            <i class="fa-regular fa-file-shield ${b.has_summary ? 'text-purple-600' : 'text-slate-400'}"></i> 4. Summary Sheet
                         </span>
-                        <span class="text-[9px] px-1.5 py-0.5 rounded font-bold ${b.has_summary ? 'bg-purple-500/30 text-purple-300' : 'bg-slate-700 text-slate-400'}">
+                        <span class="text-[10px] px-2 py-0.5 rounded font-bold ${b.has_summary ? 'bg-purple-100 text-purple-800 border border-purple-300' : 'bg-rose-50 text-rose-700 border border-rose-200'}">
                             ${b.has_summary ? 'SAVED' : 'MISSING'}
                         </span>
                     </div>
-                    <div class="font-mono text-[11px] ${b.has_summary ? 'text-purple-200' : 'text-slate-500 italic'} truncate" title="${escapeHtml(b.summary_file ? b.summary_file.filename : 'Not available')}">
+                    <div class="font-mono text-xs ${b.has_summary ? 'text-purple-900 font-bold' : 'text-slate-400 italic'} truncate" title="${escapeHtml(b.summary_file ? b.summary_file.filename : 'Not available')}">
                         ${escapeHtml(b.summary_file ? b.summary_file.filename : 'No summary file uploaded')}
                     </div>
                 </div>
-                <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between">
-                    <span class="text-[10px] text-slate-400">Summary Bundle</span>
+                <div class="mt-2.5 pt-2 border-t border-purple-100 flex items-center justify-between">
+                    <span class="text-[10px] text-purple-700/80 font-medium">Summary Bundle</span>
                     ${b.has_summary ? `
-                        <a href="${b.summary_file.download_url}" class="text-[11px] text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1">
+                        <a href="${b.summary_file.download_url}" class="text-xs text-purple-700 hover:text-purple-900 font-bold flex items-center gap-1">
                             <i class="fa-solid fa-download text-[10px]"></i> Download
                         </a>
-                    ` : `<span class="text-[10px] text-slate-500">Upload Summary ZIP</span>`}
+                    ` : `<span class="text-[10px] text-slate-400">Upload Summary ZIP</span>`}
                 </div>
             </div>
         `;
@@ -1448,53 +1612,53 @@ function renderZipRegistryTable() {
 
         const odCell = hasOrder && targetOrderFile ? `
             <div class="flex items-center justify-center gap-1">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px] border border-emerald-300">
                     <i class="fa-solid fa-check"></i> ${thisOrdType}
                 </span>
-                <a href="${targetOrderFile.download_url}" class="p-1 text-slate-500 hover:text-emerald-700" title="${escapeHtml(targetOrderFile.filename)}">
+                <a href="${targetOrderFile.download_url}" class="p-1 text-emerald-600 hover:text-emerald-800" title="${escapeHtml(targetOrderFile.filename)}">
                     <i class="fa-solid fa-download text-xs"></i>
                 </a>
             </div>
-        ` : `<span class="text-slate-300 text-[10px] italic">Missing</span>`;
+        ` : `<span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-100 text-[10px] font-medium">Missing</span>`;
 
         const twoMoreCell = p.has_two_more_invoice ? `
             <div class="flex items-center justify-center gap-1">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-[10px]">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-[10px] border border-amber-300">
                     <i class="fa-solid fa-check"></i> 2 More
                 </span>
-                <a href="${p.two_more_invoice.download_url}" class="p-1 text-slate-500 hover:text-amber-700" title="${escapeHtml(p.two_more_invoice.filename)}">
+                <a href="${p.two_more_invoice.download_url}" class="p-1 text-amber-600 hover:text-amber-800" title="${escapeHtml(p.two_more_invoice.filename)}">
                     <i class="fa-solid fa-download text-xs"></i>
                 </a>
             </div>
-        ` : `<span class="text-slate-400 text-[10px]">Skipped (Opt)</span>`;
+        ` : `<span class="text-slate-400 text-[10px] font-medium">Skipped (Opt)</span>`;
 
         const detailsCell = p.has_details ? `
             <div class="flex items-center justify-center gap-1">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold text-[10px]">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold text-[10px] border border-blue-300">
                     <i class="fa-solid fa-check"></i> Details
                 </span>
-                <a href="${p.details_file.download_url}" class="p-1 text-slate-500 hover:text-blue-700" title="${escapeHtml(p.details_file.filename)}">
+                <a href="${p.details_file.download_url}" class="p-1 text-blue-600 hover:text-blue-800" title="${escapeHtml(p.details_file.filename)}">
                     <i class="fa-solid fa-download text-xs"></i>
                 </a>
             </div>
-        ` : `<span class="text-slate-300 text-[10px] italic">Missing</span>`;
+        ` : `<span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-100 text-[10px] font-medium">Missing</span>`;
 
         const summaryCell = p.has_summary ? `
             <div class="flex items-center justify-center gap-1">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-100 text-purple-800 font-bold text-[10px]">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-100 text-purple-800 font-bold text-[10px] border border-purple-300">
                     <i class="fa-solid fa-check"></i> Summary
                 </span>
-                <a href="${p.summary_file.download_url}" class="p-1 text-slate-500 hover:text-purple-700" title="${escapeHtml(p.summary_file.filename)}">
+                <a href="${p.summary_file.download_url}" class="p-1 text-purple-600 hover:text-purple-800" title="${escapeHtml(p.summary_file.filename)}">
                     <i class="fa-solid fa-download text-xs"></i>
                 </a>
             </div>
-        ` : `<span class="text-slate-300 text-[10px] italic">Missing</span>`;
+        ` : `<span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-100 text-[10px] font-medium">Missing</span>`;
 
         rowsHtml += `
-            <tr class="hover:bg-slate-50/80 transition">
-                <td class="py-2.5 px-4 font-sans text-slate-800">
+            <tr class="hover:bg-indigo-50/30 transition">
+                <td class="py-2.5 px-4 font-sans">
                     <div class="flex items-center space-x-2">
-                        <button onclick="selectPartyForPipeline('${p.party_code}')" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs cursor-pointer" title="Click to view linked files">
+                        <button onclick="selectPartyForPipeline('${p.party_code}')" class="text-indigo-700 hover:text-indigo-900 font-bold text-xs cursor-pointer" title="Click to view linked files">
                             ${partyLabel}
                         </button>
                     </div>
@@ -1504,7 +1668,7 @@ function renderZipRegistryTable() {
                 <td class="py-2.5 px-4 text-center">${detailsCell}</td>
                 <td class="py-2.5 px-4 text-center">${summaryCell}</td>
                 <td class="py-2.5 px-4 text-center">
-                    <a href="/api/zip/download_party_bundle/${p.platform}/${p.party_code}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 hover:bg-indigo-50 text-indigo-700 border border-slate-200 transition" title="Download all available files for ${p.party_code} as zip">
+                    <a href="/api/zip/download_party_bundle/${p.platform}/${p.party_code}" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition active:scale-95 shadow-2xs" title="Download all available files for ${p.party_code} as zip">
                         <i class="fa-solid fa-file-zipper text-xs"></i> Bundle
                     </a>
                 </td>

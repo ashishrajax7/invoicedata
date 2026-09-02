@@ -546,11 +546,24 @@ def get_all_zip_status():
             if party_bundle['has_summary']:
                 out['total_summary_files'] += 1
 
+        p_od = sum(1 for pb in parties_list if pb.get('has_od'))
+        p_pr = sum(1 for pb in parties_list if pb.get('has_pr'))
+        p_order = sum(1 for pb in parties_list if pb.get('has_order_file'))
+        p_two_more = sum(1 for pb in parties_list if pb.get('has_two_more_invoice'))
+        p_details = sum(1 for pb in parties_list if pb.get('has_details'))
+        p_summary = sum(1 for pb in parties_list if pb.get('has_summary'))
+
         parties_list.sort(key=lambda x: sort_party_key(x['party_code']))
         out['platforms'][p] = {
             'stats': p_info.get('stats', {}),
             'order_file_type': 'PR' if is_pr_plat else 'OD',
             'parties_count': len(parties_list),
+            'order_count': p_order,
+            'od_count': p_od,
+            'pr_count': p_pr,
+            'two_more_count': p_two_more,
+            'details_count': p_details,
+            'summary_count': p_summary,
             'parties': parties_list
         }
         out['total_parties'] += len(parties_list)
