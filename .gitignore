@@ -1,0 +1,33 @@
+﻿# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.class
+
+# Caches and runtime
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+
+# Dynamic runtime storage & uploads (cleared automatically by server)
+zip_storage/*
+!zip_storage/.gitkeep
+backups/*
+!backups/.gitkeep
+*.xlsx
+*.xls
+*.zip
+*.csv
+
+# Environment & IDE
+.env
+.vscode/
+.idea/
+*.log
+.DS_Store
+Thumbs.db
