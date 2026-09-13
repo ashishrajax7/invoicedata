@@ -1,4 +1,4 @@
-﻿# Byte-compiled / optimized / DLL files
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *.class
@@ -19,6 +19,8 @@ zip_storage/*
 !zip_storage/.gitkeep
 backups/*
 !backups/.gitkeep
+tax_reports/*
+!tax_reports/.gitkeep
 *.xlsx
 *.xls
 *.zip
@@ -26,6 +28,9 @@ backups/*
 
 # Environment & IDE
 .env
+google_drive_credentials.json
+*_credentials*.json
+*secret*.json
 .vscode/
 .idea/
 *.log

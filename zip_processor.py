@@ -96,12 +96,11 @@ def parse_party_info_from_filename(filename):
 def process_order_zip(platform, extract_dir, original_zip_name=''):
     """
     Processes Order / Processed ZIP:
-    - For AJIO: Scans for OD File (*-OD.xlsx or *OD*.xlsx)
-    - For MYNTRA & FLIPKART: Scans for PR File (*-PR.xlsx or *PR*.xlsx)
-    - For ALL platforms: 2 MORE INVOICE File (*2 MORE INVOICE*.xlsx) is OPTIONAL
+    - For ALL platforms (AJIO, MYNTRA, FLIPKART): Scans for OD File (*-OD.xlsx or *OD*.xlsx)
+    - 2 MORE INVOICE File (*2 MORE INVOICE*.xlsx) is OPTIONAL for all platforms
+    - PR files are retained as backward compatibility fallback
     """
     platform = normalize_platform(platform)
-    is_pr_platform = (platform in ['MYNTRA', 'FLIPKART'])
     registry = load_registry()
     p_data = registry['platforms'][platform]
     
@@ -157,31 +156,26 @@ def process_order_zip(platform, extract_dir, original_zip_name=''):
             # Check 2 MORE INVOICE file (Optional for all platforms)
             is_two_more = bool(re.search(r'2[\s_-]*MORE[\s_-]*INVOICE', fname, re.IGNORECASE))
             
-            # Check PR file (Primary for Myntra and Flipkart)
+            # Check OD file (Primary for ALL platforms: AJIO, Myntra, Flipkart)
+            is_od = bool(re.search(r'[-_\s]OD\.(xlsx|xls)$', fname, re.IGNORECASE) or 
+                         re.search(r'OD\.(xlsx|xls)$', fname, re.IGNORECASE) or
+                         (re.search(r'\bOD\b', fname, re.IGNORECASE) and not re.search(r'2[\s_-]*MORE', fname, re.IGNORECASE)))
+
+            # Check PR file (Backward compatibility fallback)
             is_pr = bool(re.search(r'[-_\s]PR\.(xlsx|xls)$', fname, re.IGNORECASE) or 
                          re.search(r'PR\.(xlsx|xls)$', fname, re.IGNORECASE) or
                          (re.search(r'\bPR\b', fname, re.IGNORECASE) and not re.search(r'2[\s_-]*MORE', fname, re.IGNORECASE)))
             
-            # Check OD file (Primary for AJIO)
-            is_od = bool(re.search(r'[-_\s]OD\.(xlsx|xls)$', fname, re.IGNORECASE) or 
-                         re.search(r'OD\.(xlsx|xls)$', fname, re.IGNORECASE) or
-                         (re.search(r'\bOD\b', fname, re.IGNORECASE) and not re.search(r'2[\s_-]*MORE', fname, re.IGNORECASE)))
-            
             if is_two_more:
                 extracted_parties[party_code]['two_more_invoice'] = (fname, file_path)
-            elif is_pr_platform and is_pr:
-                extracted_parties[party_code]['order_file'] = (fname, file_path)
-                extracted_parties[party_code]['pr_file'] = (fname, file_path)
-            elif not is_pr_platform and is_od:
+            elif is_od:
                 extracted_parties[party_code]['order_file'] = (fname, file_path)
                 extracted_parties[party_code]['od_file'] = (fname, file_path)
             elif is_pr:
-                extracted_parties[party_code]['pr_file'] = (fname, file_path)
-            elif is_od:
-                extracted_parties[party_code]['od_file'] = (fname, file_path)
-                # Fallback if Myntra/FK didn't have a PR file
-                if is_pr_platform and not extracted_parties[party_code]['order_file']:
+                # Fallback support if an archive still contains a PR file
+                if not extracted_parties[party_code]['order_file']:
                     extracted_parties[party_code]['order_file'] = (fname, file_path)
+                extracted_parties[party_code]['pr_file'] = (fname, file_path)
             else:
                 extracted_parties[party_code]['other_files'].append((fname, file_path))
 
@@ -191,7 +185,7 @@ def process_order_zip(platform, extract_dir, original_zip_name=''):
 
     for party_code, pfiles in extracted_parties.items():
         party_storage_dir = os.path.join(ZIP_STORAGE_DIR, platform, party_code)
-        target_subfolder_name = 'pr' if is_pr_platform else 'od'
+        target_subfolder_name = 'od'
         order_dir = os.path.join(party_storage_dir, target_subfolder_name)
         two_more_dir = os.path.join(party_storage_dir, 'two_more_invoice')
         os.makedirs(order_dir, exist_ok=True)
@@ -202,7 +196,7 @@ def process_order_zip(platform, extract_dir, original_zip_name=''):
                 'party_code': party_code,
                 'party_name': '',
                 'platform': platform,
-                'order_file_type': 'PR' if is_pr_platform else 'OD',
+                'order_file_type': 'OD',
                 'order_file': None,
                 'od_file': None,
                 'pr_file': None,
@@ -213,10 +207,10 @@ def process_order_zip(platform, extract_dir, original_zip_name=''):
             }
         
         party_entry = p_data['parties'][party_code]
-        party_entry['order_file_type'] = 'PR' if is_pr_platform else 'OD'
+        party_entry['order_file_type'] = 'OD'
         
-        # Save Target Order / PR / OD file
-        target_file = pfiles['order_file'] or (pfiles['pr_file'] if is_pr_platform else pfiles['od_file']) or pfiles['od_file']
+        # Save Target OD file
+        target_file = pfiles['order_file'] or pfiles['od_file'] or pfiles['pr_file']
         if target_file:
             ord_fname, ord_src = target_file
             ord_dst = os.path.join(order_dir, ord_fname)
@@ -227,13 +221,12 @@ def process_order_zip(platform, extract_dir, original_zip_name=''):
                 'size': os.path.getsize(ord_dst),
                 'saved_at': datetime.now().isoformat(),
                 'source_zip': original_zip_name,
-                'type': 'PR' if is_pr_platform else 'OD'
+                'type': 'OD'
             }
             party_entry['order_file'] = file_meta
-            if is_pr_platform:
+            party_entry['od_file'] = file_meta
+            if pfiles['pr_file'] and pfiles['pr_file'] == target_file:
                 party_entry['pr_file'] = file_meta
-            else:
-                party_entry['od_file'] = file_meta
                 
             saved_count += 1
             
@@ -256,7 +249,7 @@ def process_order_zip(platform, extract_dir, original_zip_name=''):
     p_data['stats']['order_zips'] = p_data['stats'].get('order_zips', 0) + 1
     save_registry(registry)
     
-    file_type_label = 'PR' if is_pr_platform else 'OD'
+    file_type_label = 'OD'
     return {
         'success': True,
         'platform': platform,
@@ -392,11 +385,11 @@ def handle_zip_upload(platform, zip_type, file_storage):
 def get_party_bundle(platform, party_code):
     """
     Retrieves all files for a specific party on a platform.
-    Supports PR files for Myntra & Flipkart, and OD files for AJIO.
+    Supports OD files as primary for all platforms (AJIO, Myntra, Flipkart),
+    with fallback to legacy PR files if present.
     """
     clean_expired_zip_data()
     platform = normalize_platform(platform)
-    is_pr_platform = (platform in ['MYNTRA', 'FLIPKART'])
     party_code = str(party_code).strip()
     registry = load_registry()
     p_data = registry['platforms'].get(platform, {}).get('parties', {})
@@ -404,7 +397,7 @@ def get_party_bundle(platform, party_code):
     party_info = p_data.get(party_code)
     party_dir = os.path.join(ZIP_STORAGE_DIR, platform, party_code)
     
-    order_type_str = 'PR' if is_pr_platform else 'OD'
+    order_type_str = 'OD'
     
     result = {
         'platform': platform,
@@ -426,20 +419,7 @@ def get_party_bundle(platform, party_code):
         'is_complete': False
     }
 
-    # Check PR folder
-    pr_dir = os.path.join(party_dir, 'pr')
-    if os.path.exists(pr_dir):
-        files = [f for f in os.listdir(pr_dir) if not f.startswith('.')]
-        if files:
-            result['has_pr'] = True
-            result['pr_file'] = {
-                'filename': files[0],
-                'path': os.path.join(pr_dir, files[0]),
-                'download_url': f"/api/zip/download/{platform}/{party_code}/pr/{quote(files[0])}",
-                'type': 'PR'
-            }
-
-    # Check OD folder
+    # Check OD folder (Primary)
     od_dir = os.path.join(party_dir, 'od')
     if os.path.exists(od_dir):
         files = [f for f in os.listdir(od_dir) if not f.startswith('.')]
@@ -452,21 +432,26 @@ def get_party_bundle(platform, party_code):
                 'type': 'OD'
             }
 
-    # Set canonical order_file based on platform
-    if is_pr_platform:
-        if result['has_pr']:
-            result['has_order_file'] = True
-            result['order_file'] = result['pr_file']
-        elif result['has_od']:
-            result['has_order_file'] = True
-            result['order_file'] = result['od_file']
-    else:
-        if result['has_od']:
-            result['has_order_file'] = True
-            result['order_file'] = result['od_file']
-        elif result['has_pr']:
-            result['has_order_file'] = True
-            result['order_file'] = result['pr_file']
+    # Check PR folder (Fallback for legacy uploads)
+    pr_dir = os.path.join(party_dir, 'pr')
+    if os.path.exists(pr_dir):
+        files = [f for f in os.listdir(pr_dir) if not f.startswith('.')]
+        if files:
+            result['has_pr'] = True
+            result['pr_file'] = {
+                'filename': files[0],
+                'path': os.path.join(pr_dir, files[0]),
+                'download_url': f"/api/zip/download/{platform}/{party_code}/pr/{quote(files[0])}",
+                'type': 'PR'
+            }
+
+    # Set canonical order_file based on OD first, fallback to PR
+    if result['has_od']:
+        result['has_order_file'] = True
+        result['order_file'] = result['od_file']
+    elif result['has_pr']:
+        result['has_order_file'] = True
+        result['order_file'] = result['pr_file']
 
     # Check 2 More Invoice (Optional)
     tm_dir = os.path.join(party_dir, 'two_more_invoice')
@@ -527,7 +512,6 @@ def get_all_zip_status():
     for p in VALID_PLATFORMS:
         p_info = registry['platforms'].get(p, {'parties': {}, 'stats': {}})
         parties_list = []
-        is_pr_plat = (p in ['MYNTRA', 'FLIPKART'])
         
         for pcode, pentry in p_info.get('parties', {}).items():
             party_bundle = get_party_bundle(p, pcode)
@@ -546,7 +530,7 @@ def get_all_zip_status():
             if party_bundle['has_summary']:
                 out['total_summary_files'] += 1
 
-        p_od = sum(1 for pb in parties_list if pb.get('has_od'))
+        p_od = sum(1 for pb in parties_list if (pb.get('has_od') or pb.get('has_order_file')))
         p_pr = sum(1 for pb in parties_list if pb.get('has_pr'))
         p_order = sum(1 for pb in parties_list if pb.get('has_order_file'))
         p_two_more = sum(1 for pb in parties_list if pb.get('has_two_more_invoice'))
@@ -556,7 +540,7 @@ def get_all_zip_status():
         parties_list.sort(key=lambda x: sort_party_key(x['party_code']))
         out['platforms'][p] = {
             'stats': p_info.get('stats', {}),
-            'order_file_type': 'PR' if is_pr_plat else 'OD',
+            'order_file_type': 'OD',
             'parties_count': len(parties_list),
             'order_count': p_order,
             'od_count': p_od,

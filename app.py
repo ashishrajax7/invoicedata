@@ -8,6 +8,7 @@ from flask_cors import CORS
 import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 import zip_processor
+import tax_processor
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.config['TEMPLATES_AUTO_RELOAD'] = True
@@ -63,11 +64,31 @@ def create_backup(filename):
         return backup_filename
     return None
 
-def parse_block_sheet(ws, sheet_name='', source_file=''):
+def parse_block_sheet(ws, sheet_name='', source_file='', force_platform=None):
     items = []
     raw_rows = list(ws.iter_rows(values_only=True))
     i = 0
     item_id = 1
+    
+    file_upper = (source_file or '').upper()
+    sname_upper = (sheet_name or '').strip().upper()
+    
+    fallback_platform = 'General'
+    if force_platform and force_platform != 'General':
+        fallback_platform = force_platform
+    elif 'AJIO' in file_upper or 'REPORT' in file_upper:
+        fallback_platform = 'AJIO'
+    elif 'MYNTRA' in file_upper or ('SUMMARY' in file_upper and 'FK' not in file_upper and 'FLIPKART' not in file_upper and 'REPORT' not in file_upper):
+        fallback_platform = 'Myntra'
+    elif 'FLIPKART' in file_upper or 'FK' in file_upper:
+        fallback_platform = 'Flipkart'
+    elif 'AJIO' in sname_upper or 'SHORT LIST' in sname_upper:
+        fallback_platform = 'AJIO'
+    elif 'MYNTRA' in sname_upper or 'PARTY' in sname_upper:
+        fallback_platform = 'Myntra'
+    elif 'FLIPKART' in sname_upper or ('SUMMARY' in sname_upper and 'INVOICE' not in sname_upper):
+        fallback_platform = 'Flipkart'
+
     while i < len(raw_rows):
         r1 = raw_rows[i]
         if r1 and r1[0]:
@@ -79,13 +100,13 @@ def parse_block_sheet(ws, sheet_name='', source_file=''):
                 if r2 and r2[0] is not None:
                     invoice_range = str(r2[0]).strip()
             
-            platform = 'General'
+            platform = fallback_platform
             inv_upper = invoice_range.upper()
-            if inv_upper.startswith('AJ27S') or 'AJIO' in sheet_name.upper() or 'REPORT' in source_file.upper():
+            if inv_upper.startswith('AJ27S'):
                 platform = 'AJIO'
-            elif inv_upper.startswith('MY27S') or 'MYNTRA' in sheet_name.upper() or 'PARTY' in sheet_name.upper():
+            elif inv_upper.startswith('MY27S'):
                 platform = 'Myntra'
-            elif inv_upper.startswith('FK27S') or 'FLIPKART' in sheet_name.upper() or 'FK' in source_file.upper():
+            elif inv_upper.startswith('FK27S'):
                 platform = 'Flipkart'
             
             items.append({
@@ -220,6 +241,15 @@ def refresh_master_cache():
     
     for f in all_files:
         filepath = os.path.join(BASE_DIR, f)
+        f_upper = f.upper()
+        file_plat = 'General'
+        if 'AJIO' in f_upper or 'REPORT' in f_upper:
+            file_plat = 'AJIO'
+        elif 'MYNTRA' in f_upper or ('SUMMARY' in f_upper and 'FK' not in f_upper and 'FLIPKART' not in f_upper and 'REPORT' not in f_upper):
+            file_plat = 'Myntra'
+        elif 'FLIPKART' in f_upper or 'FK' in f_upper:
+            file_plat = 'Flipkart'
+
         try:
             wb = openpyxl.load_workbook(filepath, data_only=True)
             detailed_rows = []
@@ -246,10 +276,20 @@ def refresh_master_cache():
                                 row_dict[int_col] = 0
                         detailed_rows.append(row_dict)
                 else:
-                    block_sheets[sname] = parse_block_sheet(ws, sname, f)
+                    items = parse_block_sheet(ws, sname, f, force_platform=file_plat)
+                    block_sheets[sname] = items
+                    s_upper = sname.strip().upper()
+                    if s_upper in ['INVOICE SUMMARY', 'INVOICESUMMARY']:
+                        if file_plat == 'AJIO' and 'Short List' not in block_sheets:
+                            block_sheets['Short List'] = items
+                        elif file_plat == 'Myntra' and 'Party Details' not in block_sheets:
+                            block_sheets['Party Details'] = items
+                        elif file_plat == 'Flipkart' and 'Summary' not in block_sheets:
+                            block_sheets['Summary'] = items
                     
             files_data[f] = {
                 'filename': f,
+                'platform': file_plat,
                 'is_combined': False,
                 'available_files': all_files,
                 'active_file': f,
@@ -261,7 +301,24 @@ def refresh_master_cache():
             if detailed_rows:
                 combined_detailed.extend(detailed_rows)
             for sname, items in block_sheets.items():
-                if sname in ['Short List', 'Party Details', 'Summary']:
+                s_upper = sname.strip().upper()
+                if s_upper in ['INVOICE SUMMARY', 'INVOICESUMMARY']:
+                    plat = file_plat
+                    if plat == 'General' and items:
+                        first_inv = (items[0].get('invoice_range') or '').upper()
+                        if first_inv.startswith('AJ27S'): plat = 'AJIO'
+                        elif first_inv.startswith('MY27S'): plat = 'Myntra'
+                        elif first_inv.startswith('FK27S'): plat = 'Flipkart'
+                    
+                    if plat == 'AJIO':
+                        combined_block_sheets['Short List'].extend(items)
+                    elif plat == 'Myntra':
+                        combined_block_sheets['Party Details'].extend(items)
+                    elif plat == 'Flipkart':
+                        combined_block_sheets['Summary'].extend(items)
+                    else:
+                        combined_block_sheets.setdefault(sname, []).extend(items)
+                elif sname in ['Short List', 'Party Details', 'Summary']:
                     combined_block_sheets[sname].extend(items)
                 else:
                     if sname not in combined_block_sheets:
@@ -374,8 +431,8 @@ def save_data():
     if filename == '__all__':
         all_files = get_workspace_files()
         
-        # 1. Save Detailed Summary + Short List to Summary_Report file
-        report_file = next((f for f in all_files if 'REPORT' in f.upper()), '18-08-2026-Summary_Report.xlsx')
+        # 1. Save Detailed Summary + Invoice Summary to Summary_Report / AJIO file
+        report_file = next((f for f in all_files if 'AJIO' in f.upper() or 'REPORT' in f.upper()), 'AJIO_Invoice_Summary.xlsx')
         b1 = create_backup(report_file)
         if b1: backups.append(b1)
         
@@ -387,40 +444,43 @@ def save_data():
             for r_idx, row_data in enumerate(detailed_rows, start=2):
                 row_vals = [row_data.get(h, '') for h in DETAILED_HEADERS]
                 ws1.append(row_vals)
+            ws_sl = wb_rep.create_sheet('Invoice Summary')
         else:
-            ws1 = wb_rep.active
-            ws1.title = 'Short List'
+            ws_sl = wb_rep.active
+            ws_sl.title = 'Invoice Summary'
             
-        if 'Short List' in block_sheets:
-            ws_sl = wb_rep['Short List'] if 'Short List' in wb_rep.sheetnames else wb_rep.create_sheet('Short List')
-            write_block_sheet(ws_sl, block_sheets['Short List'])
+        ajio_items = block_sheets.get('Short List') or block_sheets.get('Invoice Summary') or []
+        if ajio_items:
+            write_block_sheet(ws_sl, ajio_items)
             
         wb_rep.save(os.path.join(BASE_DIR, report_file))
         saved_files.append(report_file)
         
-        # 2. Save Party Details to SUMMARY.xlsx
-        summary_file = next((f for f in all_files if 'SUMMARY' in f.upper() and 'REPORT' not in f.upper() and 'FK' not in f.upper()), '18-08-2026-SUMMARY.xlsx')
+        # 2. Save Invoice Summary to Myntra file
+        summary_file = next((f for f in all_files if 'MYNTRA' in f.upper() or ('SUMMARY' in f.upper() and 'REPORT' not in f.upper() and 'FK' not in f.upper() and 'FLIPKART' not in f.upper())), 'MYNTRA_Invoice_Summary.xlsx')
         b2 = create_backup(summary_file)
         if b2: backups.append(b2)
         
         wb_sum = openpyxl.Workbook()
         ws_pd = wb_sum.active
-        ws_pd.title = 'Party Details'
-        if 'Party Details' in block_sheets:
-            write_block_sheet(ws_pd, block_sheets['Party Details'])
+        ws_pd.title = 'Invoice Summary'
+        myntra_items = block_sheets.get('Party Details') or []
+        if myntra_items:
+            write_block_sheet(ws_pd, myntra_items)
         wb_sum.save(os.path.join(BASE_DIR, summary_file))
         saved_files.append(summary_file)
         
-        # 3. Save Summary to Summary-FK.xlsx
-        fk_file = next((f for f in all_files if 'FK' in f.upper()), '18-08-2026-Summary-FK.xlsx')
+        # 3. Save Invoice Summary to Flipkart file
+        fk_file = next((f for f in all_files if 'FLIPKART' in f.upper() or 'FK' in f.upper()), 'FLIPKART_Invoice_Summary.xlsx')
         b3 = create_backup(fk_file)
         if b3: backups.append(b3)
         
         wb_fk = openpyxl.Workbook()
         ws_fk = wb_fk.active
-        ws_fk.title = 'Summary'
-        if 'Summary' in block_sheets:
-            write_block_sheet(ws_fk, block_sheets['Summary'])
+        ws_fk.title = 'Invoice Summary'
+        fk_items = block_sheets.get('Summary') or []
+        if fk_items:
+            write_block_sheet(ws_fk, fk_items)
         wb_fk.save(os.path.join(BASE_DIR, fk_file))
         saved_files.append(fk_file)
         
@@ -508,6 +568,7 @@ def clear_data():
 
 @app.route('/api/upload', methods=['POST'])
 def upload_files():
+    platform = (request.form.get('platform') or '').strip().upper()
     uploaded_files = request.files.getlist('files')
     if not uploaded_files:
         if 'file' in request.files:
@@ -519,9 +580,30 @@ def upload_files():
     saved_names = []
     for file in uploaded_files:
         if file.filename.endswith('.xlsx'):
-            dst_path = os.path.join(BASE_DIR, file.filename)
+            raw_name = file.filename
+            if platform == 'AJIO':
+                if not ('AJIO' in raw_name.upper() or 'REPORT' in raw_name.upper()):
+                    save_name = f"AJIO_{raw_name}"
+                else:
+                    save_name = raw_name
+            elif platform == 'MYNTRA':
+                if not ('MYNTRA' in raw_name.upper()):
+                    save_name = f"MYNTRA_{raw_name}"
+                else:
+                    save_name = raw_name
+            elif platform == 'FLIPKART':
+                if not ('FLIPKART' in raw_name.upper() or 'FK' in raw_name.upper()):
+                    save_name = f"FLIPKART_{raw_name}"
+                else:
+                    save_name = raw_name
+            else:
+                save_name = raw_name
+
+            dst_path = os.path.join(BASE_DIR, save_name)
+            if os.path.exists(dst_path):
+                create_backup(save_name)
             file.save(dst_path)
-            saved_names.append(file.filename)
+            saved_names.append(save_name)
             
     MASTER_CACHE['combined_data'] = None
     refresh_master_cache()
@@ -529,6 +611,8 @@ def upload_files():
     return jsonify({
         'success': True,
         'saved_files': saved_names,
+        'saved_file': saved_names[0] if saved_names else '',
+        'platform': platform,
         'message': f'Uploaded {len(saved_names)} file(s) successfully!'
     })
 
@@ -627,7 +711,7 @@ def download_party_bundle_zip(platform, party_code):
     party_code = str(party_code).strip()
     
     bundle = zip_processor.get_party_bundle(p, party_code)
-    if not (bundle['has_od'] or bundle['has_two_more_invoice'] or bundle['has_details'] or bundle['has_summary']):
+    if not (bundle['has_order_file'] or bundle['has_od'] or bundle['has_pr'] or bundle['has_two_more_invoice'] or bundle['has_details'] or bundle['has_summary']):
         return jsonify({'error': f'No files found for party {party_code} on {p}'}), 404
         
     temp_zip = os.path.join(zip_processor.ZIP_STORAGE_DIR, f"{party_code}_{p}_bundle.zip")
@@ -659,6 +743,161 @@ def clear_zip_storage_route():
         'success': True, 
         'message': f"Cleared ZIP storage for {platform if platform else 'ALL platforms'} safely (backup preserved)."
     })
+
+# ==========================================
+# 📊 TAX REPORT API ENDPOINTS (AJIO, MYNTRA, FLIPKART)
+# ==========================================
+
+@app.route('/api/tax/upload', methods=['POST'])
+def upload_tax_report():
+    platform = request.form.get('platform', 'AJIO')
+    month = request.form.get('month', '')
+    
+    files = request.files.getlist('files[]') or request.files.getlist('files')
+    if not files and 'file' in request.files:
+        files = [request.files['file']]
+        
+    if not files or files[0].filename == '':
+        return jsonify({'success': False, 'error': 'No file selected for upload'}), 400
+
+    res = tax_processor.process_tax_upload(platform, month, files)
+    return jsonify(res)
+
+@app.route('/api/tax/data', methods=['GET'])
+def get_tax_data():
+    data = tax_processor.get_all_tax_data()
+    return jsonify({'success': True, 'data': data})
+
+@app.route('/api/tax/download/<platform>/<month>/<path:filename>', methods=['GET'])
+def download_tax_file(platform, month, filename):
+    p = tax_processor.normalize_platform(platform)
+    m = tax_processor.normalize_month(month)
+    safe_file = os.path.basename(filename)
+    
+    if '/old/' in request.path or filename.startswith('old/'):
+        target_path = os.path.join(tax_processor.TAX_STORAGE_DIR, p, m, 'old', safe_file)
+    else:
+        target_path = os.path.join(tax_processor.TAX_STORAGE_DIR, p, m, safe_file)
+
+    if os.path.exists(target_path):
+        return send_file(target_path, as_attachment=True, download_name=safe_file)
+    return jsonify({'error': 'File not found'}), 404
+
+@app.route('/api/tax/download_zip/<platform>/<month>', methods=['GET'])
+def download_tax_month_zip(platform, month):
+    p = tax_processor.normalize_platform(platform)
+    m = tax_processor.normalize_month(month)
+    
+    temp_zip = os.path.join(tax_processor.TAX_STORAGE_DIR, f"{p}_{m}_tax_reports.zip")
+    success = tax_processor.export_month_as_zip(p, m, temp_zip)
+    if not success or not os.path.exists(temp_zip):
+        return jsonify({'error': f'No files found for {p} in {m}'}), 404
+        
+    @after_this_request
+    def remove_zip(response):
+        try:
+            if os.path.exists(temp_zip):
+                os.remove(temp_zip)
+        except Exception:
+            pass
+        return response
+        
+    return send_file(temp_zip, as_attachment=True, download_name=f"{p}_{m.upper()}_TaxReports.zip")
+
+@app.route('/api/tax/rename', methods=['POST'])
+def rename_tax_file_route():
+    payload = request.get_json() or {}
+    platform = payload.get('platform', 'AJIO')
+    month = payload.get('month', '')
+    old_name = payload.get('old_filename', '').strip()
+    new_name = payload.get('new_filename', '').strip()
+
+    if not old_name or not new_name:
+        return jsonify({'success': False, 'error': 'Filename cannot be empty'}), 400
+
+    res = tax_processor.rename_tax_file(platform, month, old_name, new_name)
+    return jsonify(res)
+
+@app.route('/api/tax/delete', methods=['POST'])
+def delete_tax_file_route():
+    payload = request.get_json() or {}
+    platform = payload.get('platform', 'AJIO')
+    month = payload.get('month', '')
+    filename = payload.get('filename', '').strip()
+    is_old = bool(payload.get('is_old', False))
+
+    if not filename:
+        return jsonify({'success': False, 'error': 'Filename required'}), 400
+
+    res = tax_processor.delete_tax_file(platform, month, filename, is_old=is_old)
+    return jsonify(res)
+
+@app.route('/api/tax/delete_all', methods=['POST'])
+def delete_all_tax_files_route():
+    payload = request.get_json() or {}
+    platform = payload.get('platform', 'AJIO')
+    month = payload.get('month', '')
+    include_old = bool(payload.get('include_old', True))
+
+    if not month:
+        return jsonify({'success': False, 'error': 'Month required'}), 400
+
+    res = tax_processor.delete_all_tax_files(platform, month, include_old=include_old)
+    return jsonify(res)
+
+@app.route('/api/tax/config', methods=['GET', 'POST'])
+def tax_config_route():
+    if request.method == 'POST':
+        payload = request.get_json() or {}
+        cfg = tax_processor.load_tax_config()
+        if 'folder_id' in payload:
+            cfg['folder_id'] = payload['folder_id'].strip()
+        if 'gas_url' in payload:
+            cfg['gas_url'] = payload['gas_url'].strip()
+        tax_processor.save_tax_config(cfg)
+        status = tax_processor.reload_gdrive_connection()
+        if cfg.get('gas_url'):
+            status['gas_configured'] = True
+            status['gas_url'] = cfg.get('gas_url')
+            status['connected'] = True
+            status['message'] = 'Google Apps Script Drive Sync Active'
+        return jsonify({'success': True, 'config': cfg, 'status': status})
+    else:
+        cfg = tax_processor.load_tax_config()
+        status = tax_processor.gdrive.get_status()
+        if cfg.get('gas_url'):
+            status['gas_configured'] = True
+            status['gas_url'] = cfg.get('gas_url')
+            status['connected'] = True
+            status['message'] = 'Google Apps Script Drive Sync Active'
+        return jsonify({'success': True, 'config': cfg, 'status': status})
+
+@app.route('/api/tax/sync_file', methods=['POST'])
+def sync_single_tax_file_route():
+    payload = request.get_json() or {}
+    platform = payload.get('platform', 'AJIO')
+    month = payload.get('month', '')
+    filename = payload.get('filename', '').strip()
+    is_old = bool(payload.get('is_old', False))
+
+    if not filename or not month:
+        return jsonify({'success': False, 'error': 'Month and Filename required'}), 400
+
+    res = tax_processor.sync_single_tax_file(platform, month, filename, is_old=is_old)
+    return jsonify(res)
+
+@app.route('/api/tax/sync_to_drive', methods=['POST'])
+def sync_tax_to_drive():
+    payload = request.get_json() or {}
+    platform = payload.get('platform')
+    month = payload.get('month')
+    res = tax_processor.sync_all_local_to_drive(platform, month)
+    return jsonify(res)
+
+@app.route('/api/tax/sync_drive_structure', methods=['POST'])
+def sync_drive_structure():
+    res = tax_processor.sync_with_google_drive()
+    return jsonify(res)
 
 # Startup cleanup of expired files (runs both in gunicorn on Render and local dev)
 try:

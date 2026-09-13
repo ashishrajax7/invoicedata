@@ -172,8 +172,9 @@
                 <!-- ZIP Files Breakdown Row for Myntra (Colored Metrics) -->
                 <div class="mt-3 pt-2.5 border-t border-blue-100 grid grid-cols-4 gap-1.5 text-center text-[11px]">
                     <div class="bg-emerald-50/70 p-1.5 rounded-lg border border-emerald-200/70">
-                        <div class="text-emerald-700 font-medium text-[10px]">PR</div>
-                        <div id="myntraZipPrCount" class="font-bold text-emerald-800 text-xs">0</div>
+                        <div class="text-emerald-700 font-medium text-[10px]">OD</div>
+                        <div id="myntraZipOdCount" class="font-bold text-emerald-800 text-xs">0</div>
+                        <span id="myntraZipPrCount" class="hidden">0</span>
                     </div>
                     <div class="bg-amber-50/70 p-1.5 rounded-lg border border-amber-200/70">
                         <div class="text-amber-700 font-medium text-[10px]">2-More</div>
@@ -209,8 +210,9 @@
                 <!-- ZIP Files Breakdown Row for Flipkart (Colored Metrics) -->
                 <div class="mt-3 pt-2.5 border-t border-amber-100 grid grid-cols-4 gap-1.5 text-center text-[11px]">
                     <div class="bg-emerald-50/70 p-1.5 rounded-lg border border-emerald-200/70">
-                        <div class="text-emerald-700 font-medium text-[10px]">PR</div>
-                        <div id="flipkartZipPrCount" class="font-bold text-emerald-800 text-xs">0</div>
+                        <div class="text-emerald-700 font-medium text-[10px]">OD</div>
+                        <div id="flipkartZipOdCount" class="font-bold text-emerald-800 text-xs">0</div>
+                        <span id="flipkartZipPrCount" class="hidden">0</span>
                     </div>
                     <div class="bg-amber-50/70 p-1.5 rounded-lg border border-amber-200/70">
                         <div class="text-amber-700 font-medium text-[10px]">2-More</div>
@@ -231,21 +233,25 @@
         <!-- Navigation Tabs & Toolbar -->
         <div class="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
             <div class="flex flex-wrap items-center justify-between border-b border-slate-200/80 px-4 sm:px-6 py-3 gap-3">
-                <!-- Tab Buttons: ZIP Bundles First, then Invoice Summary Upload, then Files & Backups -->
+                <!-- Tab Buttons: ZIP Bundles First, then Tax Report, then Invoice Summary, then Upload Center (Files & Backups) Last -->
                 <nav class="flex flex-wrap space-x-1 sm:space-x-2" aria-label="Tabs">
                     <button onclick="switchTab('zipbundles')" id="tab-zipbundles" class="tab-btn active px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg flex items-center space-x-2 text-indigo-700 bg-indigo-50/90 border border-indigo-200/90 transition">
                         <i class="fa-solid fa-file-zipper text-indigo-600"></i>
                         <span>ZIP Bundles & Registry</span>
                         <span id="tabCountZipBundles" class="bg-indigo-100 text-indigo-800 text-[11px] px-2 py-0.2 rounded-full font-bold ml-1">0</span>
                     </button>
+                    <button onclick="switchTab('taxreport')" id="tab-taxreport" class="tab-btn px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg flex items-center space-x-2 text-slate-600 hover:text-amber-700 hover:bg-amber-50/50 transition">
+                        <i class="fa-solid fa-receipt text-amber-600"></i>
+                        <span>Tax Report</span>
+                    </button>
                     <button onclick="switchTab('invoicesummary')" id="tab-invoicesummary" class="tab-btn px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg flex items-center space-x-2 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50/50 transition">
                         <i class="fa-solid fa-file-excel text-emerald-600"></i>
-                        <span>Invoice Summary Upload</span>
+                        <span>Invoice Summary</span>
                         <span id="tabCountInvoiceSummary" class="bg-emerald-100 text-emerald-800 text-[11px] px-2 py-0.2 rounded-full font-bold ml-1">0</span>
                     </button>
                     <button onclick="switchTab('files')" id="tab-files" class="tab-btn px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg flex items-center space-x-2 text-slate-600 hover:text-blue-700 hover:bg-blue-50/50 transition">
                         <i class="fa-solid fa-folder-open text-blue-600"></i>
-                        <span>Files & Backups (ZIP & Excel)</span>
+                        <span>Upload Center & Backups</span>
                     </button>
                 </nav>
 
@@ -273,23 +279,23 @@
                 <!-- Subtab Navigation Bar -->
                 <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-100 p-1.5 rounded-xl border border-slate-200/80">
                     <div class="flex flex-wrap items-center gap-1.5">
-                        <button type="button" onclick="switchSummarySubTab('shortlist')" id="subtab-shortlist" class="subtab-btn active px-3.5 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 bg-white text-purple-700 shadow-2xs border border-purple-200 transition">
-                            <i class="fa-solid fa-bag-shopping text-purple-600 text-xs"></i>
+                        <button type="button" onclick="switchSummarySubTab('shortlist')" id="subtab-shortlist" class="subtab-btn active px-3.5 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 bg-purple-600 text-white shadow-2xs transition">
+                            <i class="fa-solid fa-bag-shopping text-white text-xs"></i>
                             <span>AJIO (Short List)</span>
-                            <span id="subtabCountShortlist" class="text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.2 rounded font-bold border border-purple-200">0/0</span>
+                            <span id="subtabCountShortlist" class="text-[10px] bg-purple-700 text-white px-1.5 py-0.2 rounded font-bold">0/0</span>
                         </button>
-                        <button type="button" onclick="switchSummarySubTab('partydetails')" id="subtab-partydetails" class="subtab-btn px-3.5 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 text-blue-700 hover:bg-blue-50/70 transition">
+                        <button type="button" onclick="switchSummarySubTab('partydetails')" id="subtab-partydetails" class="subtab-btn px-3.5 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 text-slate-600 hover:text-blue-700 hover:bg-blue-50/70 transition">
                             <i class="fa-solid fa-shirt text-blue-600 text-xs"></i>
                             <span>Myntra (Party Details)</span>
                             <span id="subtabCountPartyDetails" class="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.2 rounded font-bold border border-blue-200">0/0</span>
                         </button>
-                        <button type="button" onclick="switchSummarySubTab('summary')" id="subtab-summary" class="subtab-btn px-3.5 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 text-amber-700 hover:bg-amber-50/70 transition">
+                        <button type="button" onclick="switchSummarySubTab('summary')" id="subtab-summary" class="subtab-btn px-3.5 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 text-slate-600 hover:text-amber-700 hover:bg-amber-50/70 transition">
                             <i class="fa-solid fa-cart-shopping text-amber-600 text-xs"></i>
                             <span>Flipkart (Summary)</span>
                             <span id="subtabCountSummary" class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-bold border border-amber-200">0/0</span>
                         </button>
-                        <button type="button" onclick="switchSummarySubTab('uploadbox')" id="subtab-uploadbox" class="subtab-btn px-3.5 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 text-indigo-700 hover:bg-indigo-50/70 transition">
-                            <i class="fa-solid fa-cloud-arrow-up text-indigo-600 text-xs"></i>
+                        <button type="button" onclick="switchSummarySubTab('uploadbox')" id="subtab-uploadbox" class="subtab-btn px-3.5 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50/70 transition">
+                            <i class="fa-solid fa-cloud-arrow-up text-emerald-600 text-xs"></i>
                             <span>Upload Summary Excel</span>
                         </button>
                     </div>
@@ -438,20 +444,109 @@
                     </div>
                 </div>
 
-                <!-- SUBPANEL 4: UPLOAD EXCEL FILES -->
-                <div id="subpanel-uploadbox" class="summary-subpanel hidden">
-                    <div class="bg-white p-6 rounded-xl border border-slate-200/90 shadow-2xs flex flex-col justify-between">
-                        <div>
-                            <h4 class="font-semibold text-slate-900 text-sm flex items-center gap-2 mb-1">
-                                <i class="fa-solid fa-cloud-arrow-up text-indigo-600"></i>
-                                <span>Upload Invoice Summary Excel Files</span>
-                            </h4>
-                            <p class="text-xs text-slate-500 mb-4">Select or drop your Summary Excel files (AJIO Short List, Myntra Party Details, or Flipkart Summary). The checklist will update immediately!</p>
-                            
-                            <div class="border-2 border-dashed border-slate-200 hover:border-slate-400 rounded-xl p-8 text-center transition bg-slate-50/50 hover:bg-slate-50 cursor-pointer" onclick="document.getElementById('excelFileInput').click()">
-                                <i class="fa-regular fa-file-excel text-4xl text-emerald-600 mb-2"></i>
-                                <p class="text-xs font-medium text-slate-800">Click to select or drag & drop .xlsx files here</p>
-                                <p class="text-[11px] text-slate-400 mt-1">Supports multiple files selection</p>
+                <!-- SUBPANEL 4: UPLOAD EXCEL FILES (3 DEDICATED PLATFORMS) -->
+                <div id="subpanel-uploadbox" class="summary-subpanel hidden space-y-4">
+                    <div class="bg-white p-5 sm:p-6 rounded-xl border border-slate-200/90 shadow-2xs space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 text-base">
+                                    <i class="fa-regular fa-file-excel"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-base text-slate-900 flex items-center gap-2">
+                                        <span>Upload Invoice Summary Excel Files</span>
+                                        <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-md font-medium border border-emerald-200/80">3 Platforms</span>
+                                    </h3>
+                                    <p class="text-xs text-slate-500 mt-0.5">Upload platform-specific Excel files (All share sheet name: <code class="bg-slate-100 px-1 py-0.5 rounded text-indigo-700 font-bold">Invoice Summary</code>).</p>
+                                </div>
+                            </div>
+                            <div class="text-xs text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 flex items-center gap-2">
+                                <i class="fa-solid fa-circle-info text-indigo-500"></i>
+                                <span>Sheet Name: <span class="font-bold text-indigo-700">"Invoice Summary"</span></span>
+                            </div>
+                        </div>
+
+                        <!-- 3 Dedicated Platform Excel Upload Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+                            <!-- 1. AJIO Excel Upload Card (Purple Theme) -->
+                            <div id="subpanel-dropzone-excel-AJIO" class="bg-purple-50/40 p-5 rounded-xl border border-purple-200/90 hover:border-purple-400 shadow-2xs hover:shadow-xs transition group flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center justify-between mb-2.5">
+                                        <div class="flex items-center space-x-2.5">
+                                            <span class="w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center font-semibold text-xs shadow-2xs">
+                                                <i class="fa-solid fa-bag-shopping text-xs"></i>
+                                            </span>
+                                            <h4 class="font-semibold text-purple-950 text-sm">AJIO Excel File</h4>
+                                        </div>
+                                        <span class="text-[10px] bg-purple-100/90 text-purple-800 font-bold px-2 py-0.5 rounded-md border border-purple-200">AJIO</span>
+                                    </div>
+                                    <p class="text-[11px] text-purple-900/70 mb-3.5 leading-relaxed">
+                                        Upload AJIO Excel file with <code class="bg-white/90 border border-purple-200/80 px-1 py-0.5 rounded text-purple-900 font-mono">Invoice Summary</code> sheet.
+                                    </p>
+
+                                    <div class="border-2 border-dashed border-purple-300 hover:border-purple-500 bg-white hover:bg-purple-50/60 rounded-xl p-5 text-center cursor-pointer transition shadow-2xs" onclick="document.getElementById('subpanel-excelFileInput-AJIO').click()">
+                                        <i class="fa-regular fa-file-excel text-3xl text-purple-600 mb-1.5 group-hover:scale-105 transition-transform"></i>
+                                        <p class="text-xs font-semibold text-purple-950">Select or Drop AJIO .xlsx</p>
+                                        <p class="text-[10px] text-purple-700/70 mt-0.5">Sheet: Invoice Summary</p>
+                                        <input type="file" id="subpanel-excelFileInput-AJIO" accept=".xlsx" onchange="uploadPlatformExcel('AJIO', this.files)" class="hidden">
+                                    </div>
+                                </div>
+                                <div id="subpanel-excelActiveBadge-AJIO" class="mt-2.5 min-h-[22px] flex items-center justify-between text-[11px]"></div>
+                                <div id="subpanel-excelUploadStatus-AJIO" class="mt-1 text-xs min-h-[18px]"></div>
+                            </div>
+
+                            <!-- 2. Myntra Excel Upload Card (Blue Theme) -->
+                            <div id="subpanel-dropzone-excel-MYNTRA" class="bg-blue-50/40 p-5 rounded-xl border border-blue-200/90 hover:border-blue-400 shadow-2xs hover:shadow-xs transition group flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center justify-between mb-2.5">
+                                        <div class="flex items-center space-x-2.5">
+                                            <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-semibold text-xs shadow-2xs">
+                                                <i class="fa-solid fa-shirt text-xs"></i>
+                                            </span>
+                                            <h4 class="font-semibold text-blue-950 text-sm">Myntra Excel File</h4>
+                                        </div>
+                                        <span class="text-[10px] bg-blue-100/90 text-blue-800 font-bold px-2 py-0.5 rounded-md border border-blue-200">Myntra</span>
+                                    </div>
+                                    <p class="text-[11px] text-blue-900/70 mb-3.5 leading-relaxed">
+                                        Upload Myntra Excel file with <code class="bg-white/90 border border-blue-200/80 px-1 py-0.5 rounded text-blue-900 font-mono">Invoice Summary</code> sheet.
+                                    </p>
+
+                                    <div class="border-2 border-dashed border-blue-300 hover:border-blue-500 bg-white hover:bg-blue-50/60 rounded-xl p-5 text-center cursor-pointer transition shadow-2xs" onclick="document.getElementById('subpanel-excelFileInput-MYNTRA').click()">
+                                        <i class="fa-regular fa-file-excel text-3xl text-blue-600 mb-1.5 group-hover:scale-105 transition-transform"></i>
+                                        <p class="text-xs font-semibold text-blue-950">Select or Drop Myntra .xlsx</p>
+                                        <p class="text-[10px] text-blue-700/70 mt-0.5">Sheet: Invoice Summary</p>
+                                        <input type="file" id="subpanel-excelFileInput-MYNTRA" accept=".xlsx" onchange="uploadPlatformExcel('MYNTRA', this.files)" class="hidden">
+                                    </div>
+                                </div>
+                                <div id="subpanel-excelActiveBadge-MYNTRA" class="mt-2.5 min-h-[22px] flex items-center justify-between text-[11px]"></div>
+                                <div id="subpanel-excelUploadStatus-MYNTRA" class="mt-1 text-xs min-h-[18px]"></div>
+                            </div>
+
+                            <!-- 3. Flipkart Excel Upload Card (Amber Theme) -->
+                            <div id="subpanel-dropzone-excel-FLIPKART" class="bg-amber-50/40 p-5 rounded-xl border border-amber-200/90 hover:border-amber-400 shadow-2xs hover:shadow-xs transition group flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center justify-between mb-2.5">
+                                        <div class="flex items-center space-x-2.5">
+                                            <span class="w-7 h-7 rounded-lg bg-amber-600 text-white flex items-center justify-center font-semibold text-xs shadow-2xs">
+                                                <i class="fa-solid fa-cart-shopping text-xs"></i>
+                                            </span>
+                                            <h4 class="font-semibold text-amber-950 text-sm">Flipkart Excel File</h4>
+                                        </div>
+                                        <span class="text-[10px] bg-amber-100/90 text-amber-800 font-bold px-2 py-0.5 rounded-md border border-amber-200">Flipkart</span>
+                                    </div>
+                                    <p class="text-[11px] text-amber-900/70 mb-3.5 leading-relaxed">
+                                        Upload Flipkart Excel file with <code class="bg-white/90 border border-amber-200/80 px-1 py-0.5 rounded text-amber-900 font-mono">Invoice Summary</code> sheet.
+                                    </p>
+
+                                    <div class="border-2 border-dashed border-amber-300 hover:border-amber-500 bg-white hover:bg-amber-50/60 rounded-xl p-5 text-center cursor-pointer transition shadow-2xs" onclick="document.getElementById('subpanel-excelFileInput-FLIPKART').click()">
+                                        <i class="fa-regular fa-file-excel text-3xl text-amber-600 mb-1.5 group-hover:scale-105 transition-transform"></i>
+                                        <p class="text-xs font-semibold text-amber-950">Select or Drop Flipkart .xlsx</p>
+                                        <p class="text-[10px] text-amber-700/70 mt-0.5">Sheet: Invoice Summary</p>
+                                        <input type="file" id="subpanel-excelFileInput-FLIPKART" accept=".xlsx" onchange="uploadPlatformExcel('FLIPKART', this.files)" class="hidden">
+                                    </div>
+                                </div>
+                                <div id="subpanel-excelActiveBadge-FLIPKART" class="mt-2.5 min-h-[22px] flex items-center justify-between text-[11px]"></div>
+                                <div id="subpanel-excelUploadStatus-FLIPKART" class="mt-1 text-xs min-h-[18px]"></div>
                             </div>
                         </div>
                     </div>
@@ -461,8 +556,46 @@
             <!-- TAB 3: FILES & UPLOADS -->
             <div id="panel-files" class="tab-panel hidden p-4 sm:p-6 space-y-5">
 
-                <!-- DEDICATED SECTION 1: MARKETPLACE ZIP BUNDLES UPLOAD (IMAGE 1 PART) -->
-                <div class="bg-white p-5 sm:p-6 rounded-xl border border-slate-200/90 shadow-2xs space-y-4">
+                <!-- Upload Section Sub-Navigation (Invoice ZIP, Invoice Summary, Tax Report) -->
+                <div class="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200/90 shadow-2xs">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 text-base shadow-2xs">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-sm sm:text-base text-slate-900">Upload Center</h3>
+                                <p class="text-xs text-slate-500">Choose a category to upload files without clutter or confusion.</p>
+                            </div>
+                        </div>
+
+                        <!-- 3 Upload Category Tabs -->
+                        <div class="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200/80">
+                            <!-- Tab 1: Invoice ZIP -->
+                            <button type="button" onclick="switchUploadSubTab('zip')" id="uploadSubTabBtn-zip" class="upload-subtab-btn px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 shadow-2xs bg-indigo-600 text-white">
+                                <i class="fa-solid fa-file-zipper text-xs text-white"></i>
+                                <span>Invoice ZIP</span>
+                            </button>
+
+                            <!-- Tab 2: Tax Report -->
+                            <button type="button" onclick="switchUploadSubTab('tax')" id="uploadSubTabBtn-tax" class="upload-subtab-btn px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-2">
+                                <i class="fa-solid fa-file-invoice-dollar text-xs text-amber-600"></i>
+                                <span>Tax Report</span>
+                            </button>
+
+                            <!-- Tab 3: Invoice Summary -->
+                            <button type="button" onclick="switchUploadSubTab('summary')" id="uploadSubTabBtn-summary" class="upload-subtab-btn px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-2">
+                                <i class="fa-regular fa-file-excel text-xs text-emerald-600"></i>
+                                <span>Invoice Summary</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUBPANEL 1: INVOICE ZIP BUNDLES UPLOAD -->
+                <div id="uploadSubPanel-zip" class="uploadSubPanel space-y-5">
+                    <!-- DEDICATED SECTION 1: MARKETPLACE ZIP BUNDLES UPLOAD (IMAGE 1 PART) -->
+                    <div class="bg-white p-5 sm:p-6 rounded-xl border border-slate-200/90 shadow-2xs space-y-4">
                     <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
                         <div class="flex items-center space-x-3">
                             <div class="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 text-base">
@@ -473,21 +606,21 @@
                                     <span>Marketplace ZIP Bundles Upload</span>
                                     <span id="filesZipPlatformBadge" class="text-[11px] bg-purple-50 text-purple-700 px-2.5 py-0.5 rounded-md font-medium border border-purple-200/80">AJIO</span>
                                 </h3>
-                                <p class="text-xs text-slate-500 mt-0.5">Upload Order (OD/PR), Details, and Summary ZIP archives for automated party mapping.</p>
+                                <p class="text-xs text-slate-500 mt-0.5">Upload Order (OD), Details, and Summary ZIP archives for automated party mapping.</p>
                             </div>
                         </div>
 
                         <!-- Platform Switcher Buttons for Quick ZIP Upload -->
                         <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200/80">
-                            <button type="button" onclick="switchZipPlatform('AJIO')" id="filesZipBtn-AJIO" class="filesZipPlatBtn px-3.5 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 bg-white text-slate-900 border border-slate-200 shadow-2xs">
-                                <i class="fa-solid fa-bag-shopping text-purple-600 text-xs"></i>
+                            <button type="button" onclick="switchZipPlatform('AJIO')" id="filesZipBtn-AJIO" class="filesZipPlatBtn px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-purple-600 text-white shadow-xs">
+                                <i class="fa-solid fa-bag-shopping text-white text-xs"></i>
                                 <span>AJIO</span>
                             </button>
-                            <button type="button" onclick="switchZipPlatform('MYNTRA')" id="filesZipBtn-MYNTRA" class="filesZipPlatBtn px-3.5 py-1.5 rounded-md text-xs font-normal text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
+                            <button type="button" onclick="switchZipPlatform('MYNTRA')" id="filesZipBtn-MYNTRA" class="filesZipPlatBtn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
                                 <i class="fa-solid fa-shirt text-blue-600 text-xs"></i>
                                 <span>Myntra</span>
                             </button>
-                            <button type="button" onclick="switchZipPlatform('FLIPKART')" id="filesZipBtn-FLIPKART" class="filesZipPlatBtn px-3.5 py-1.5 rounded-md text-xs font-normal text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
+                            <button type="button" onclick="switchZipPlatform('FLIPKART')" id="filesZipBtn-FLIPKART" class="filesZipPlatBtn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
                                 <i class="fa-solid fa-cart-shopping text-amber-600 text-xs"></i>
                                 <span>Flipkart</span>
                             </button>
@@ -569,27 +702,242 @@
                         </div>
                     </div>
                 </div>
+                <!-- END SUBPANEL 1: INVOICE ZIP BUNDLES UPLOAD -->
+            </div>
 
-                <!-- SECTION 2: EXCEL FILES UPLOAD & DIRECTORY LIST -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div class="bg-white p-5 sm:p-6 rounded-xl border border-slate-200/90 shadow-2xs flex flex-col justify-between">
-                        <div>
-                            <h4 class="font-semibold text-slate-900 text-sm flex items-center gap-2 mb-1">
-                                <i class="fa-solid fa-cloud-arrow-up text-indigo-600"></i>
-                                <span>Upload Excel Files (Single or Multiple)</span>
-                            </h4>
-                            <p class="text-xs text-slate-500 mb-4">Select all 3 files at once (AJIO Report, Myntra Summary, Flipkart Summary) to display and merge instantly.</p>
-                            
-                            <div class="border-2 border-dashed border-slate-200 hover:border-slate-400 rounded-xl p-6 text-center transition bg-slate-50/50 hover:bg-slate-50 cursor-pointer" onclick="document.getElementById('excelFileInput').click()">
-                                <i class="fa-regular fa-file-excel text-3xl text-emerald-600 mb-2"></i>
-                                <p class="text-xs font-medium text-slate-800">Click to select or drag & drop ALL .xlsx files</p>
-                                <p class="text-[11px] text-slate-400 mt-1">Supports multiple files selection</p>
-                                <input type="file" id="excelFileInput" multiple accept=".xlsx" onchange="uploadNewExcel(this.files)" class="hidden">
+            <!-- SUBPANEL 2: INVOICE SUMMARY EXCEL UPLOAD -->
+            <div id="uploadSubPanel-summary" class="uploadSubPanel hidden space-y-5">
+                <!-- SECTION 2: 3-PLATFORM EXCEL UPLOAD SECTION (AJIO, MYNTRA, FLIPKART) -->
+                <div class="bg-white p-5 sm:p-6 rounded-xl border border-slate-200/90 shadow-2xs space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 text-base">
+                                <i class="fa-regular fa-file-excel"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-base text-slate-900 flex items-center gap-2">
+                                    <span>Marketplace Excel Upload</span>
+                                    <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-md font-medium border border-emerald-200/80">Invoice Summary</span>
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">Upload platform-specific Excel files (Sheet: <code class="bg-slate-100 px-1 py-0.5 rounded text-indigo-700 font-bold">Invoice Summary</code>) for AJIO, Myntra, and Flipkart.</p>
                             </div>
                         </div>
-                        <div id="uploadStatusMsg" class="mt-3 text-xs"></div>
+                        <div class="text-xs text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-info text-indigo-500"></i>
+                            <span>All platforms share sheet name: <span class="font-bold text-indigo-700">"Invoice Summary"</span></span>
+                        </div>
                     </div>
 
+                    <!-- 3 Dedicated Platform Excel Upload Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+                        <!-- 1. AJIO Excel Upload Card (Purple Theme) -->
+                        <div id="dropzone-excel-AJIO" class="bg-purple-50/40 p-5 rounded-xl border border-purple-200/90 hover:border-purple-400 shadow-2xs hover:shadow-xs transition group flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2.5">
+                                    <div class="flex items-center space-x-2.5">
+                                        <span class="w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center font-semibold text-xs shadow-2xs">
+                                            <i class="fa-solid fa-bag-shopping text-xs"></i>
+                                        </span>
+                                        <h4 class="font-semibold text-purple-950 text-sm">AJIO Excel File</h4>
+                                    </div>
+                                    <span class="text-[10px] bg-purple-100/90 text-purple-800 font-bold px-2 py-0.5 rounded-md border border-purple-200">AJIO</span>
+                                </div>
+                                <p class="text-[11px] text-purple-900/70 mb-3.5 leading-relaxed">
+                                    Upload AJIO summary Excel file with <code class="bg-white/90 border border-purple-200/80 px-1 py-0.5 rounded text-purple-900 font-mono">Invoice Summary</code> sheet.
+                                </p>
+
+                                <div class="border-2 border-dashed border-purple-300 hover:border-purple-500 bg-white hover:bg-purple-50/60 rounded-xl p-5 text-center cursor-pointer transition shadow-2xs" onclick="document.getElementById('excelFileInput-AJIO').click()">
+                                    <i class="fa-regular fa-file-excel text-3xl text-purple-600 mb-1.5 group-hover:scale-105 transition-transform"></i>
+                                    <p class="text-xs font-semibold text-purple-950">Select or Drop AJIO .xlsx</p>
+                                    <p class="text-[10px] text-purple-700/70 mt-0.5">Sheet: Invoice Summary</p>
+                                    <input type="file" id="excelFileInput-AJIO" accept=".xlsx" onchange="uploadPlatformExcel('AJIO', this.files)" class="hidden">
+                                </div>
+                            </div>
+                            <div id="excelActiveBadge-AJIO" class="mt-2.5 min-h-[22px] flex items-center justify-between text-[11px]"></div>
+                            <div id="excelUploadStatus-AJIO" class="mt-1 text-xs min-h-[18px]"></div>
+                        </div>
+
+                        <!-- 2. Myntra Excel Upload Card (Blue Theme) -->
+                        <div id="dropzone-excel-MYNTRA" class="bg-blue-50/40 p-5 rounded-xl border border-blue-200/90 hover:border-blue-400 shadow-2xs hover:shadow-xs transition group flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2.5">
+                                    <div class="flex items-center space-x-2.5">
+                                        <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-semibold text-xs shadow-2xs">
+                                            <i class="fa-solid fa-shirt text-xs"></i>
+                                        </span>
+                                        <h4 class="font-semibold text-blue-950 text-sm">Myntra Excel File</h4>
+                                    </div>
+                                    <span class="text-[10px] bg-blue-100/90 text-blue-800 font-bold px-2 py-0.5 rounded-md border border-blue-200">Myntra</span>
+                                </div>
+                                <p class="text-[11px] text-blue-900/70 mb-3.5 leading-relaxed">
+                                    Upload Myntra summary Excel file with <code class="bg-white/90 border border-blue-200/80 px-1 py-0.5 rounded text-blue-900 font-mono">Invoice Summary</code> sheet.
+                                </p>
+
+                                <div class="border-2 border-dashed border-blue-300 hover:border-blue-500 bg-white hover:bg-blue-50/60 rounded-xl p-5 text-center cursor-pointer transition shadow-2xs" onclick="document.getElementById('excelFileInput-MYNTRA').click()">
+                                    <i class="fa-regular fa-file-excel text-3xl text-blue-600 mb-1.5 group-hover:scale-105 transition-transform"></i>
+                                    <p class="text-xs font-semibold text-blue-950">Select or Drop Myntra .xlsx</p>
+                                    <p class="text-[10px] text-blue-700/70 mt-0.5">Sheet: Invoice Summary</p>
+                                    <input type="file" id="excelFileInput-MYNTRA" accept=".xlsx" onchange="uploadPlatformExcel('MYNTRA', this.files)" class="hidden">
+                                </div>
+                            </div>
+                            <div id="excelActiveBadge-MYNTRA" class="mt-2.5 min-h-[22px] flex items-center justify-between text-[11px]"></div>
+                            <div id="excelUploadStatus-MYNTRA" class="mt-1 text-xs min-h-[18px]"></div>
+                        </div>
+
+                        <!-- 3. Flipkart Excel Upload Card (Amber Theme) -->
+                        <div id="dropzone-excel-FLIPKART" class="bg-amber-50/40 p-5 rounded-xl border border-amber-200/90 hover:border-amber-400 shadow-2xs hover:shadow-xs transition group flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2.5">
+                                    <div class="flex items-center space-x-2.5">
+                                        <span class="w-7 h-7 rounded-lg bg-amber-600 text-white flex items-center justify-center font-semibold text-xs shadow-2xs">
+                                            <i class="fa-solid fa-cart-shopping text-xs"></i>
+                                        </span>
+                                        <h4 class="font-semibold text-amber-950 text-sm">Flipkart Excel File</h4>
+                                    </div>
+                                    <span class="text-[10px] bg-amber-100/90 text-amber-800 font-bold px-2 py-0.5 rounded-md border border-amber-200">Flipkart</span>
+                                </div>
+                                <p class="text-[11px] text-amber-900/70 mb-3.5 leading-relaxed">
+                                    Upload Flipkart summary Excel file with <code class="bg-white/90 border border-amber-200/80 px-1 py-0.5 rounded text-amber-900 font-mono">Invoice Summary</code> sheet.
+                                </p>
+
+                                <div class="border-2 border-dashed border-amber-300 hover:border-amber-500 bg-white hover:bg-amber-50/60 rounded-xl p-5 text-center cursor-pointer transition shadow-2xs" onclick="document.getElementById('excelFileInput-FLIPKART').click()">
+                                    <i class="fa-regular fa-file-excel text-3xl text-amber-600 mb-1.5 group-hover:scale-105 transition-transform"></i>
+                                    <p class="text-xs font-semibold text-amber-950">Select or Drop Flipkart .xlsx</p>
+                                    <p class="text-[10px] text-amber-700/70 mt-0.5">Sheet: Invoice Summary</p>
+                                    <input type="file" id="excelFileInput-FLIPKART" accept=".xlsx" onchange="uploadPlatformExcel('FLIPKART', this.files)" class="hidden">
+                                </div>
+                            </div>
+                            <div id="excelActiveBadge-FLIPKART" class="mt-2.5 min-h-[22px] flex items-center justify-between text-[11px]"></div>
+                            <div id="excelUploadStatus-FLIPKART" class="mt-1 text-xs min-h-[18px]"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- END SUBPANEL 2: INVOICE SUMMARY EXCEL UPLOAD -->
+            </div>
+
+            <!-- SUBPANEL 3: TAX REPORTS UPLOAD -->
+            <div id="uploadSubPanel-tax" class="uploadSubPanel hidden space-y-5">
+                <!-- DEDICATED SECTION 3: TAX REPORTS UPLOAD (AUTOMATED RENAMING & DRIVE SYNC) -->
+                <div class="bg-white p-5 sm:p-6 rounded-xl border border-slate-200/90 shadow-2xs space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 text-base">
+                                <i class="fa-solid fa-file-invoice-dollar"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-base text-slate-900 flex items-center gap-2">
+                                    <span>Tax Reports Upload</span>
+                                    <span class="text-[11px] bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-md font-bold border border-amber-200">Auto-Rename + Drive Sync</span>
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">Auto-extracts party code from Column G / A and syncs to Google Drive monthly folders.</p>
+                            </div>
+                        </div>
+
+                        <!-- Month Selector for Tax Upload -->
+                        <div class="flex items-center gap-2">
+                            <label for="taxUploadMonthSelectFiles" class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                <i class="fa-regular fa-calendar text-amber-600"></i> Select Month:
+                            </label>
+                            <select id="taxUploadMonthSelectFiles" onchange="syncTaxMonthSelection(this.value)" class="bg-white border border-slate-300 text-slate-900 font-bold text-xs px-3 py-1.5 rounded-lg focus:outline-none focus:border-amber-500 shadow-2xs">
+                                <option value="jan">January</option>
+                                <option value="feb">February</option>
+                                <option value="mar">March</option>
+                                <option value="apr">April</option>
+                                <option value="may">May</option>
+                                <option value="jun">June</option>
+                                <option value="jul">July</option>
+                                <option value="aug">August</option>
+                                <option value="sep">September</option>
+                                <option value="oct">October</option>
+                                <option value="nov">November</option>
+                                <option value="dec">December</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 3 Dedicated Tax Report Dropzones -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+                        <!-- 1. AJIO Tax Report Card -->
+                        <div class="bg-purple-50/40 p-5 rounded-xl border border-purple-200/90 hover:border-purple-400 shadow-2xs hover:shadow-xs transition flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2.5">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center font-semibold text-xs shadow-2xs">
+                                            <i class="fa-solid fa-bag-shopping text-xs"></i>
+                                        </span>
+                                        <h4 class="font-semibold text-purple-950 text-sm">AJIO Tax Report</h4>
+                                    </div>
+                                    <span class="text-[10px] bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded-md border border-purple-200">AJIO (A)</span>
+                                </div>
+                                <p class="text-[11px] text-purple-900/70 mb-3.5 leading-relaxed">
+                                    Upload AJIO tax Excel / CSV. Auto-appends party code + <strong>"A"</strong> (e.g. <code class="bg-white px-1 py-0.5 rounded text-purple-900 font-mono">...150A.csv</code>).
+                                </p>
+                                <div id="taxDropzone-AJIO" class="border-2 border-dashed border-purple-300 hover:border-purple-500 bg-white hover:bg-purple-50/60 rounded-xl p-5 text-center cursor-pointer transition shadow-2xs" onclick="document.getElementById('taxFileInput-AJIO').click()">
+                                    <i class="fa-solid fa-file-arrow-up text-3xl text-purple-600 mb-1.5"></i>
+                                    <p class="text-xs font-semibold text-purple-950">Select or Drop AJIO Tax Excel / CSV</p>
+                                    <p class="text-[10px] text-purple-700/70 mt-0.5">Supports CSV, XLSX, XLS (Multi-file)</p>
+                                    <input type="file" id="taxFileInput-AJIO" accept=".xlsx,.xls,.csv" multiple onchange="uploadTaxReportFiles('AJIO', this.files)" class="hidden">
+                                </div>
+                            </div>
+                            <div id="taxUploadStatus-AJIO" class="mt-2 text-xs min-h-[18px]"></div>
+                        </div>
+
+                        <!-- 2. Myntra Tax Report Card -->
+                        <div class="bg-blue-50/40 p-5 rounded-xl border border-blue-200/90 hover:border-blue-400 shadow-2xs hover:shadow-xs transition flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2.5">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-semibold text-xs shadow-2xs">
+                                            <i class="fa-solid fa-shirt text-xs"></i>
+                                        </span>
+                                        <h4 class="font-semibold text-blue-950 text-sm">Myntra Tax Report</h4>
+                                    </div>
+                                    <span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-md border border-blue-200">Myntra (M)</span>
+                                </div>
+                                <p class="text-[11px] text-blue-900/70 mb-3.5 leading-relaxed">
+                                    Upload Myntra tax Excel / CSV. Auto-appends party code + <strong>"M"</strong> (e.g. <code class="bg-white px-1 py-0.5 rounded text-blue-900 font-mono">...139M.csv</code>).
+                                </p>
+                                <div id="taxDropzone-MYNTRA" class="border-2 border-dashed border-blue-300 hover:border-blue-500 bg-white hover:bg-blue-50/60 rounded-xl p-5 text-center cursor-pointer transition shadow-2xs" onclick="document.getElementById('taxFileInput-MYNTRA').click()">
+                                    <i class="fa-solid fa-file-arrow-up text-3xl text-blue-600 mb-1.5"></i>
+                                    <p class="text-xs font-semibold text-blue-950">Select or Drop Myntra Tax Excel / CSV</p>
+                                    <p class="text-[10px] text-blue-700/70 mt-0.5">Supports CSV, XLSX, XLS (Multi-file)</p>
+                                    <input type="file" id="taxFileInput-MYNTRA" accept=".xlsx,.xls,.csv" multiple onchange="uploadTaxReportFiles('MYNTRA', this.files)" class="hidden">
+                                </div>
+                            </div>
+                            <div id="taxUploadStatus-MYNTRA" class="mt-2 text-xs min-h-[18px]"></div>
+                        </div>
+
+                        <!-- 3. Flipkart Tax Report Card -->
+                        <div class="bg-amber-50/40 p-5 rounded-xl border border-amber-200/90 hover:border-amber-400 shadow-2xs hover:shadow-xs transition flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2.5">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="w-7 h-7 rounded-lg bg-amber-600 text-white flex items-center justify-center font-semibold text-xs shadow-2xs">
+                                            <i class="fa-solid fa-cart-shopping text-xs"></i>
+                                        </span>
+                                        <h4 class="font-semibold text-amber-950 text-sm">Flipkart Tax Report</h4>
+                                    </div>
+                                    <span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-md border border-amber-200">Flipkart (F)</span>
+                                </div>
+                                <p class="text-[11px] text-amber-900/70 mb-3.5 leading-relaxed">
+                                    Upload Flipkart tax Excel / CSV. Auto-appends party code + <strong>"F"</strong> (e.g. <code class="bg-white px-1 py-0.5 rounded text-amber-900 font-mono">...509F.csv</code>).
+                                </p>
+                                <div id="taxDropzone-FLIPKART" class="border-2 border-dashed border-amber-300 hover:border-amber-500 bg-white hover:bg-amber-50/60 rounded-xl p-5 text-center cursor-pointer transition shadow-2xs" onclick="document.getElementById('taxFileInput-FLIPKART').click()">
+                                    <i class="fa-solid fa-file-arrow-up text-3xl text-amber-600 mb-1.5"></i>
+                                    <p class="text-xs font-semibold text-amber-950">Select or Drop Flipkart Tax Excel / CSV</p>
+                                    <p class="text-[10px] text-amber-700/70 mt-0.5">Supports CSV, XLSX, XLS (Multi-file)</p>
+                                    <input type="file" id="taxFileInput-FLIPKART" accept=".xlsx,.xls,.csv" multiple onchange="uploadTaxReportFiles('FLIPKART', this.files)" class="hidden">
+                                </div>
+                            </div>
+                            <div id="taxUploadStatus-FLIPKART" class="mt-2 text-xs min-h-[18px]"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- END SUBPANEL 3: TAX REPORTS UPLOAD -->
+            </div>
+
+            <!-- SECTION 4: LOADED FILES & BACKUPS -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div class="bg-white p-5 sm:p-6 rounded-xl border border-slate-200/90 shadow-2xs">
                         <div class="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
                             <h4 class="font-semibold text-slate-900 text-sm flex items-center gap-2">
@@ -603,14 +951,155 @@
                         <div id="loadedFilesList" class="space-y-1.5 mb-4 text-xs">
                             <!-- Injected by JS -->
                         </div>
+                    </div>
 
-                        <h4 class="font-semibold text-slate-900 text-sm flex items-center gap-2 mb-2 pt-3 border-t border-slate-100">
-                            <i class="fa-solid fa-clock-rotate-left text-slate-500"></i>
-                            <span>Automatic Backups</span>
-                        </h4>
-                        <div id="backupsList" class="max-h-36 overflow-y-auto space-y-1.5 pr-1 text-xs">
+                    <div class="bg-white p-5 sm:p-6 rounded-xl border border-slate-200/90 shadow-2xs">
+                        <div class="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
+                            <h4 class="font-semibold text-slate-900 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-clock-rotate-left text-slate-500"></i>
+                                <span>Automatic Backups</span>
+                            </h4>
+                            <button onclick="loadBackupsList()" class="text-xs text-slate-500 hover:text-indigo-600 font-medium flex items-center gap-1">
+                                <i class="fa-solid fa-rotate text-xs"></i> Refresh
+                            </button>
+                        </div>
+                        <div id="backupsList" class="max-h-56 overflow-y-auto space-y-1.5 pr-1 text-xs">
                             <div class="text-slate-400 italic">Loading backups...</div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: TAX REPORT (FULL DASHBOARD & DRIVE MANAGER) -->
+            <div id="panel-taxreport" class="tab-panel hidden p-4 sm:p-6 space-y-5">
+                <!-- Top Toolbar & Google Drive Status Bar -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3.5">
+                        <div class="w-10 h-10 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 text-lg">
+                            <i class="fa-solid fa-file-invoice-dollar"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-bold text-base text-slate-900">Tax Reports & Drive Manager</h3>
+                                <span id="taxDriveBadge" class="text-[11px] px-2.5 py-0.5 rounded-full font-bold border bg-slate-100 text-slate-700 border-slate-200">Checking Drive...</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">Automated renaming, 3-month rolling storage, duplicate archive to old/, and Google Drive sync.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2.5">
+                        <button onclick="openGoogleDriveModal()" class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg transition shadow-2xs">
+                            <i class="fa-brands fa-google-drive text-amber-600 text-sm"></i>
+                            <span>Drive Settings</span>
+                        </button>
+                        <button onclick="loadTaxReports(true)" class="p-2 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 rounded-lg text-xs transition shadow-2xs" title="Refresh Tax Data">
+                            <i class="fa-solid fa-rotate text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Platform Switcher Tabs (AJIO, Myntra, Flipkart) -->
+                <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-100 p-1.5 rounded-xl border border-slate-200/80">
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" onclick="switchTaxPlatform('AJIO')" id="taxPlatBtn-AJIO" class="taxPlatBtn px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-purple-600 text-white shadow-2xs">
+                            <i class="fa-solid fa-bag-shopping text-xs text-white"></i>
+                            <span>AJIO</span>
+                        </button>
+                        <button type="button" onclick="switchTaxPlatform('MYNTRA')" id="taxPlatBtn-MYNTRA" class="taxPlatBtn px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-shirt text-blue-600 text-xs"></i>
+                            <span>Myntra</span>
+                        </button>
+                        <button type="button" onclick="switchTaxPlatform('FLIPKART')" id="taxPlatBtn-FLIPKART" class="taxPlatBtn px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-cart-shopping text-amber-600 text-xs"></i>
+                            <span>Flipkart</span>
+                        </button>
+                    </div>
+
+                    <!-- Active Month Filter Chips / Buttons -->
+                    <div class="flex items-center gap-1.5" id="taxMonthChipsContainer">
+                        <!-- Rendered by JS: e.g. Aug (5), Sep (8), Oct (3) -->
+                    </div>
+                </div>
+
+                <!-- Active Month Header & Bulk ZIP Download -->
+                <div class="bg-white p-4 rounded-xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center space-x-2.5">
+                        <span id="taxActiveMonthBadge" class="px-3 py-1 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold rounded-lg uppercase tracking-wider">MONTH</span>
+                        <span id="taxActiveMonthCount" class="text-xs text-slate-500 font-medium">0 files in this month</span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <!-- Search in Month -->
+                        <div class="relative w-48 sm:w-60">
+                            <input type="text" id="taxSearchInput" oninput="filterTaxTable(this.value)" placeholder="Search party or file..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 focus:border-amber-400 focus:bg-white focus:outline-none rounded-lg text-xs font-medium">
+                            <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400 text-xs pointer-events-none"></i>
+                        </div>
+
+                        <button onclick="startBatchSyncToDrive()" id="taxSyncToDriveBtn" class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg shadow-blue-600/20 shadow-2xs transition active:scale-95" title="Sync pending files to Google Drive">
+                            <i class="fa-brands fa-google-drive text-xs"></i>
+                            <span>Sync to Drive</span>
+                            <span id="taxUnsyncedCountBadge" class="hidden px-1.5 py-0.2 bg-blue-800 text-[10px] rounded-full">0</span>
+                        </button>
+
+                        <button onclick="downloadActiveMonthZip()" id="taxDownloadAllZipBtn" class="inline-flex items-center gap-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg shadow-amber-600/20 shadow-2xs transition active:scale-95">
+                            <i class="fa-solid fa-file-zipper text-xs"></i>
+                            <span>Download All (ZIP)</span>
+                        </button>
+
+                        <button onclick="confirmDeleteAllMonthFiles()" id="taxDeleteAllBtn" class="inline-flex items-center gap-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg shadow-rose-600/20 shadow-2xs transition active:scale-95" title="Delete all files in this month locally & from Google Drive">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                            <span>Delete All</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Files Table -->
+                <div class="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/80 text-slate-600 font-semibold border-b border-slate-200 text-[11px]">
+                                    <th class="py-3 px-4 w-12 text-center">#</th>
+                                    <th class="py-3 px-4">File Name</th>
+                                    <th class="py-3 px-4 text-center">Party Code</th>
+                                    <th class="py-3 px-4 text-center">Size</th>
+                                    <th class="py-3 px-4 text-center">Updated At</th>
+                                    <th class="py-3 px-4 text-center w-36">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="taxFilesTableBody" class="divide-y divide-slate-100">
+                                <tr>
+                                    <td colspan="6" class="text-center py-10 text-slate-400 italic">Loading tax reports...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Archived / Replaced Files Section (old/ folder) -->
+                <div id="taxOldFilesAccordion" class="hidden bg-slate-50/80 rounded-xl border border-slate-200 p-4 space-y-3">
+                    <div class="flex items-center justify-between cursor-pointer select-none" onclick="toggleOldFilesAccordion()">
+                        <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
+                            <i class="fa-solid fa-box-archive text-amber-600"></i>
+                            <span>Archived Replaced Files (<span id="taxOldCount">0</span> in old/ folder)</span>
+                            <span class="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded font-normal">Replaced during duplicate uploads</span>
+                        </div>
+                        <i id="taxOldAccordionIcon" class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform"></i>
+                    </div>
+
+                    <div id="taxOldFilesContent" class="hidden pt-2 border-t border-slate-200/80">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="text-slate-500 font-semibold text-[10px] border-b border-slate-200">
+                                    <th class="py-1.5 px-3">Archived File</th>
+                                    <th class="py-1.5 px-3 text-center">Size</th>
+                                    <th class="py-1.5 px-3 text-center">Archived Date</th>
+                                    <th class="py-1.5 px-3 text-center w-24">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="taxOldFilesTableBody" class="divide-y divide-slate-200/60">
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -639,15 +1128,15 @@
 
                     <!-- Platform Switcher Buttons -->
                     <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200/80">
-                        <button onclick="switchZipPlatform('AJIO')" id="zipPlatformBtn-AJIO" class="px-3.5 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1.5 bg-white text-purple-700 border border-purple-200 shadow-2xs">
-                            <i class="fa-solid fa-bag-shopping text-purple-600 text-xs"></i>
+                        <button onclick="switchZipPlatform('AJIO')" id="zipPlatformBtn-AJIO" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-purple-600 text-white shadow-sm">
+                            <i class="fa-solid fa-bag-shopping text-white text-xs"></i>
                             <span>AJIO</span>
                         </button>
-                        <button onclick="switchZipPlatform('MYNTRA')" id="zipPlatformBtn-MYNTRA" class="px-3.5 py-1.5 rounded-md text-xs font-bold text-slate-600 hover:text-blue-700 transition flex items-center gap-1.5">
+                        <button onclick="switchZipPlatform('MYNTRA')" id="zipPlatformBtn-MYNTRA" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
                             <i class="fa-solid fa-shirt text-blue-600 text-xs"></i>
                             <span>Myntra</span>
                         </button>
-                        <button onclick="switchZipPlatform('FLIPKART')" id="zipPlatformBtn-FLIPKART" class="px-3.5 py-1.5 rounded-md text-xs font-bold text-slate-600 hover:text-amber-700 transition flex items-center gap-1.5">
+                        <button onclick="switchZipPlatform('FLIPKART')" id="zipPlatformBtn-FLIPKART" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
                             <i class="fa-solid fa-cart-shopping text-amber-600 text-xs"></i>
                             <span>Flipkart</span>
                         </button>
@@ -715,7 +1204,7 @@
                                     <span>Party Auto-Select & File Dispatch Pipeline</span>
                                     <span class="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-md font-bold">Step 2 Ready</span>
                                 </h4>
-                                <p class="text-xs text-slate-500 mt-0.5">Select any party code to view its OD/PR file, 2 More Invoice, Details, and Summary sheets.</p>
+                                <p class="text-xs text-slate-500 mt-0.5">Select any party code to view its OD file, 2 More Invoice, Details, and Summary sheets.</p>
                             </div>
                         </div>
 
@@ -848,6 +1337,178 @@
             </div>
         </div>
     </div>
+    <!-- Modal: Rename Tax Report File -->
+    <div id="taxRenameModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full border border-slate-200 overflow-hidden transform transition-all">
+            <div class="px-6 py-4 bg-white border-b border-slate-200 text-slate-900 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-regular fa-pen-to-square text-amber-600"></i>
+                    <h3 class="font-semibold text-sm text-slate-900">Rename Tax Report File</h3>
+                </div>
+                <button onclick="closeTaxRenameModal()" class="text-slate-400 hover:text-slate-700 transition">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+            <form id="taxRenameForm" onsubmit="handleTaxRenameSubmit(event)" class="p-6 space-y-4 text-xs">
+                <input type="hidden" id="taxRenamePlatform">
+                <input type="hidden" id="taxRenameMonth">
+                <input type="hidden" id="taxRenameOldName">
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Current File Name</label>
+                    <div id="taxRenameOldDisplay" class="p-2.5 bg-slate-100 rounded-lg text-slate-600 font-mono text-[11px] truncate"></div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-800 mb-1">New File Name (without extension) *</label>
+                    <div class="flex items-center">
+                        <input type="text" id="taxRenameInputNew" required class="flex-1 px-3 py-2 border border-slate-200 rounded-l-lg focus:border-amber-500 focus:outline-none text-slate-900 font-mono text-xs" placeholder="e.g. TaxReportData...139M">
+                        <span id="taxRenameExtLabel" class="px-3 py-2 bg-slate-100 border border-l-0 border-slate-200 rounded-r-lg font-mono text-xs font-bold text-slate-600 select-none">.csv</span>
+                    </div>
+                    <input type="hidden" id="taxRenameExt">
+                    <p class="text-[10px] text-slate-400 mt-1">Extension is locked & preserved automatically. Renames locally and in Google Drive.</p>
+                </div>
+
+                <div class="flex items-center justify-end space-x-2.5 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeTaxRenameModal()" class="px-3.5 py-1.5 text-slate-600 hover:bg-slate-100 rounded-lg font-normal transition">Cancel</button>
+                    <button type="submit" id="taxRenameSubmitBtn" class="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-semibold shadow-2xs transition">Save New Name</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Passcode Modal for Google Drive Settings -->
+    <div id="drivePasscodeModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full border border-slate-200 overflow-hidden transform transition-all p-6 text-center space-y-4">
+            <div class="w-12 h-12 mx-auto rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 text-xl shadow-xs">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-base text-slate-900">Admin Passcode Required</h3>
+                <p class="text-xs text-slate-500 mt-1">Please enter the security passcode to open Drive Settings.</p>
+            </div>
+            <form onsubmit="verifyDrivePasscode(event)" class="space-y-3">
+                <div>
+                    <input type="password" id="drivePasscodeInput" placeholder="Enter Passcode (Case-Sensitive)..." autocomplete="off" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 text-center tracking-widest focus:outline-none focus:border-amber-500 focus:bg-white transition">
+                </div>
+                <div id="drivePasscodeError" class="text-[11px] font-bold text-rose-600 hidden flex items-center justify-center gap-1.5 bg-rose-50 py-1.5 px-2 rounded-lg border border-rose-200">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span>Access Denied: Incorrect passcode (case-sensitive)!</span>
+                </div>
+                <div class="flex items-center gap-2 pt-1">
+                    <button type="button" onclick="closeDrivePasscodeModal()" class="w-1/2 py-2 px-3 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition">Cancel</button>
+                    <button type="submit" class="w-1/2 py-2 px-3 text-xs font-bold text-white bg-amber-600 hover:bg-amber-500 rounded-xl shadow-sm transition">Unlock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Google Drive Settings -->
+    <div id="taxDriveSettingsModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-lg w-full border border-slate-200 overflow-hidden transform transition-all">
+            <div class="px-6 py-4 bg-white border-b border-slate-200 text-slate-900 flex items-center justify-between">
+                <div class="flex items-center space-x-2.5">
+                    <i class="fa-brands fa-google-drive text-amber-600 text-lg"></i>
+                    <h3 class="font-bold text-sm text-slate-900">Google Drive Synchronization</h3>
+                </div>
+                <button onclick="closeGoogleDriveModal()" class="text-slate-400 hover:text-slate-700 transition">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4 text-xs">
+                <!-- Status Box -->
+                <div id="taxDriveModalStatusBox" class="p-3.5 rounded-lg border flex items-center gap-3 bg-slate-50 border-slate-200 text-slate-700">
+                    <i id="taxDriveModalStatusIcon" class="fa-solid fa-circle-info text-base text-slate-400"></i>
+                    <div class="flex-1 min-w-0">
+                        <div id="taxDriveModalStatusTitle" class="font-bold text-xs">Checking Drive Status...</div>
+                        <div id="taxDriveModalStatusDesc" class="text-[11px] text-slate-500">Connecting to Google Drive API...</div>
+                    </div>
+                </div>
+
+                <!-- Google Apps Script Web App URL Input (Zero Quota Limits, 100% Reliable) -->
+                <div>
+                    <label class="block font-bold text-slate-800 mb-1 flex items-center justify-between">
+                        <span>Google Apps Script Web App URL *</span>
+                        <span class="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold border border-emerald-200">Recommended (Fast & Free)</span>
+                    </label>
+                    <input type="url" id="taxDriveGasUrlInput" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-amber-500 focus:outline-none text-slate-900 font-mono text-xs" placeholder="https://script.google.com/macros/s/.../exec">
+                    <p class="text-[11px] text-slate-500 mt-1">
+                        Google Apps Script Web App bypasses Google's service account quota limits and uploads files directly using your own Google Drive storage.
+                    </p>
+                </div>
+
+                <!-- Folder ID Input -->
+                <div>
+                    <label class="block font-bold text-slate-800 mb-1">Tax Reports Google Drive Folder ID</label>
+                    <input type="text" id="taxDriveFolderIdInput" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-amber-500 focus:outline-none text-slate-900 font-mono text-xs" placeholder="1aFmrWvPx-0QHkIkhieB-a9F2r9Zi8OOu">
+                    <p class="text-[11px] text-slate-500 mt-1">
+                        Google Drive <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-700 font-mono">Tax Report</code> folder URL ka ID: <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-700 font-mono">1aFmrWvPx-0QHkIkhieB-a9F2r9Zi8OOu</code>
+                    </p>
+                </div>
+
+                <!-- 1-Minute Apps Script Deployment Instructions -->
+                <div class="bg-amber-50/70 p-3.5 rounded-lg border border-amber-200 space-y-2 text-[11px] text-amber-950">
+                    <div class="font-bold text-amber-900 flex items-center gap-1.5">
+                        <i class="fa-solid fa-bolt text-amber-600"></i> Google Apps Script 1-Minute Setup:
+                    </div>
+                    <ol class="list-decimal list-inside space-y-1 pl-1 text-slate-700">
+                        <li><a href="https://script.google.com/home/start" target="_blank" class="text-indigo-600 underline font-semibold">script.google.com</a> par jaa kar <strong>New Project</strong> banayein.</li>
+                        <li>Project folder me rakhi <code class="bg-white border px-1 py-0.5 rounded text-slate-800 font-mono">google_apps_script_code.js</code> file ka code copy karke paste karein aur Save karein.</li>
+                        <li>Upar blue <strong>Deploy</strong> button $\rightarrow$ <strong>New deployment</strong> $\rightarrow$ Type: <strong>Web app</strong> chunein.</li>
+                        <li><strong>Execute as: Me</strong> aur <strong>Who has access: Anyone</strong> select karke <strong>Deploy</strong> karein.</li>
+                        <li>Mila hua <strong>Web app URL</strong> upar paste karein aur <strong>Save & Connect</strong> karein!</li>
+                    </ol>
+                </div>
+
+                <!-- Action Toolbar in Modal -->
+                <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+                    <button type="button" onclick="syncAllLocalFilesToDrive()" id="taxDriveSyncAllBtn" class="px-3.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg font-bold text-xs transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span>Sync All Local Files to Drive Now</span>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <button type="button" onclick="closeGoogleDriveModal()" class="px-3.5 py-1.5 text-slate-600 hover:bg-slate-100 rounded-lg font-normal transition">Close</button>
+                        <button type="button" onclick="saveGoogleDriveFolderId()" id="taxDriveSaveBtn" class="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-bold shadow-2xs transition">Save & Connect</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Google Drive Sync Progress -->
+    <div id="taxSyncProgressModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden transform transition-all">
+            <div class="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-between">
+                <div class="flex items-center space-x-2.5">
+                    <i class="fa-brands fa-google-drive text-xl"></i>
+                    <h3 class="font-bold text-sm">Syncing to Google Drive</h3>
+                </div>
+                <span id="taxSyncProgressPercent" class="text-xs font-mono font-bold bg-white/20 px-2 py-0.5 rounded-full">0%</span>
+            </div>
+            <div class="p-6 space-y-4">
+                <!-- Progress Bar -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between text-xs font-semibold text-slate-700">
+                        <span id="taxSyncProgressStep">Preparing files...</span>
+                        <span id="taxSyncProgressCount" class="font-mono text-blue-600">0 / 0</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden p-0.5 border border-slate-200">
+                        <div id="taxSyncProgressBar" class="bg-gradient-to-r from-blue-500 to-emerald-500 h-full rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Active File Details -->
+                <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-xs space-y-1">
+                    <div class="text-[11px] text-slate-400 font-medium">Currently uploading:</div>
+                    <div id="taxSyncCurrentFilename" class="font-mono font-semibold text-slate-800 truncate text-[11px]">Preparing...</div>
+                </div>
+
+                <div class="flex items-center justify-end pt-2">
+                    <button type="button" onclick="cancelBatchSync()" id="taxSyncCancelBtn" class="px-4 py-1.5 text-xs font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Print Container -->
     <div id="printContainer" class="hidden"></div>
@@ -856,6 +1517,6 @@
     <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
     <!-- Scripts -->
-    <script src="/static/app.js?t=1787544900"></script>
+    <script src="/static/app.js?t=1787546300"></script>
 </body>
 </html>
