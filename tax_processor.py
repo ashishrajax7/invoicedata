@@ -988,6 +988,59 @@ def get_all_tax_data():
                     'old_files': sorted(old_files, key=lambda x: x['filename'])
                 }
 
+        # Merge any files recorded in manifest (synced to Google Drive)
+        for sync_key, s_info in manifest.items():
+            parts = sync_key.split('/')
+            if len(parts) < 3:
+                continue
+            plat = normalize_platform(parts[0])
+            if plat != p:
+                continue
+            m = normalize_month(parts[1])
+            is_old = (len(parts) >= 4 and parts[2] == 'old')
+            entry = parts[3] if is_old else parts[2]
+
+            if m not in months_data:
+                months_data[m] = {
+                    'month': m,
+                    'files_count': 0,
+                    'old_files_count': 0,
+                    'synced_count': 0,
+                    'unsynced_count': 0,
+                    'files': [],
+                    'old_files': []
+                }
+
+            target_list = months_data[m]['old_files'] if is_old else months_data[m]['files']
+            already_present = any(f['filename'] == entry for f in target_list)
+            if not already_present:
+                sz = s_info.get('size', 0)
+                sz_str = s_info.get('size_str') or (f"{sz / 1024:.1f} KB" if sz > 0 else "Drive Sync")
+                record = {
+                    'filename': entry,
+                    'party_code': s_info.get('party_code', ''),
+                    'size': sz,
+                    'size_str': sz_str,
+                    'updated_at': s_info.get('synced_at') or 'Synced in Drive',
+                    'download_url': f"/api/tax/download/{p}/{m}/{'old/' if is_old else ''}{entry}",
+                    'is_synced': bool(s_info.get('synced', True)),
+                    'synced_at': s_info.get('synced_at'),
+                    'drive_file_id': s_info.get('drive_file_id')
+                }
+                target_list.append(record)
+                if not is_old:
+                    months_data[m]['files_count'] = len(months_data[m]['files'])
+                    if record['is_synced']:
+                        months_data[m]['synced_count'] += 1
+                    else:
+                        months_data[m]['unsynced_count'] += 1
+                else:
+                    months_data[m]['old_files_count'] = len(months_data[m]['old_files'])
+
+        for m, m_obj in months_data.items():
+            m_obj['files'].sort(key=lambda x: x['filename'])
+            m_obj['old_files'].sort(key=lambda x: x['filename'])
+
         out['platforms'][p] = {
             'platform': p,
             'months': months_data,
@@ -1264,21 +1317,43 @@ def sync_all_local_to_drive(platform=None, month=None):
 def export_month_as_zip(platform, month, output_zip_path):
     """
     Bundles all active files of a platform's month into a single downloadable .zip archive.
+    If physical files are missing locally (e.g. on Render ephemeral disk), downloads them from Google Drive.
     """
     platform = normalize_platform(platform)
     month = normalize_month(month)
     month_dir = os.path.join(TAX_STORAGE_DIR, platform, month)
 
-    if not os.path.exists(month_dir):
-        return False
-
+    manifest = load_sync_manifest()
     files_added = 0
+    added_names = set()
+
     with zipfile.ZipFile(output_zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
-        for fname in os.listdir(month_dir):
-            fpath = os.path.join(month_dir, fname)
-            if os.path.isfile(fpath) and not fname.startswith('.'):
-                zf.write(fpath, arcname=fname)
-                files_added += 1
+        # 1. Add any local files
+        if os.path.exists(month_dir):
+            for fname in os.listdir(month_dir):
+                fpath = os.path.join(month_dir, fname)
+                if os.path.isfile(fpath) and not fname.startswith('.'):
+                    zf.write(fpath, arcname=fname)
+                    added_names.add(fname)
+                    files_added += 1
+
+        # 2. Add files recorded in manifest (Google Drive) that aren't on local disk
+        for sync_key, s_info in manifest.items():
+            parts = sync_key.split('/')
+            if len(parts) == 3 and normalize_platform(parts[0]) == platform and normalize_month(parts[1]) == month:
+                fname = parts[2]
+                if fname not in added_names:
+                    d_id = s_info.get('drive_file_id')
+                    if d_id:
+                        try:
+                            d_url = f"https://drive.google.com/uc?export=download&id={d_id}"
+                            r = requests.get(d_url, timeout=25)
+                            if r.status_code == 200 and len(r.content) > 0:
+                                zf.writestr(fname, r.content)
+                                added_names.add(fname)
+                                files_added += 1
+                        except Exception as ex:
+                            print(f"Error fetching file from Drive for zip ({fname}): {ex}")
 
     return files_added > 0
 

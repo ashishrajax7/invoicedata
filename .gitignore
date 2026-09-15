@@ -19,12 +19,17 @@ zip_storage/*
 !zip_storage/.gitkeep
 backups/*
 !backups/.gitkeep
-tax_reports/*
-!tax_reports/.gitkeep
+tax_reports/_temp_uploads/
+!tax_reports/
+!tax_reports/**
+!tax_reports/tax_sync_manifest.json
+
 *.xlsx
 *.xls
 *.zip
 *.csv
+!tax_reports/**/*.csv
+!tax_reports/**/*.xlsx
 
 # Environment & IDE
 .env

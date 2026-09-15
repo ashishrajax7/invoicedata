@@ -3,7 +3,7 @@ import glob
 import shutil
 import time
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify, send_file, after_this_request
+from flask import Flask, render_template, request, jsonify, send_file, after_this_request, redirect
 from flask_cors import CORS
 import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
@@ -773,14 +773,29 @@ def download_tax_file(platform, month, filename):
     p = tax_processor.normalize_platform(platform)
     m = tax_processor.normalize_month(month)
     safe_file = os.path.basename(filename)
+    is_old = ('/old/' in request.path or filename.startswith('old/'))
     
-    if '/old/' in request.path or filename.startswith('old/'):
+    if is_old:
         target_path = os.path.join(tax_processor.TAX_STORAGE_DIR, p, m, 'old', safe_file)
+        sync_key = f"{p}/{m}/old/{safe_file}"
     else:
         target_path = os.path.join(tax_processor.TAX_STORAGE_DIR, p, m, safe_file)
+        sync_key = f"{p}/{m}/{safe_file}"
 
     if os.path.exists(target_path):
         return send_file(target_path, as_attachment=True, download_name=safe_file)
+
+    # Fallback to Google Drive if physical file is missing (e.g. Render ephemeral disk)
+    manifest = tax_processor.load_sync_manifest()
+    info = manifest.get(sync_key)
+    if not info:
+        for k, v in manifest.items():
+            if k.lower() == sync_key.lower():
+                info = v
+                break
+    if info and info.get('drive_file_id'):
+        return redirect(f"https://drive.google.com/uc?export=download&id={info['drive_file_id']}")
+
     return jsonify({'error': 'File not found'}), 404
 
 @app.route('/api/tax/download_zip/<platform>/<month>', methods=['GET'])

@@ -1,0 +1,32 @@
+{
+  "AJIO/aug/TaxReportData6aa3a5b44d504AJ2A.csv": {
+    "synced": true,
+    "synced_at": "2026-09-13 15:49:41",
+    "drive_file_id": "1Isd6bQrgVMhkXo_s9jO4t-OFXPWecPNN",
+    "party_code": "AJ2"
+  },
+  "FLIPKART/aug/TaxReportData6aa2ab17d5b81AJ22F.csv": {
+    "synced": true,
+    "synced_at": "2026-09-13 15:51:40",
+    "drive_file_id": "1cHO3I0gvrb_yZANhJlzIrWqZMe4KrK9f",
+    "party_code": "AJ22"
+  },
+  "MYNTRA/aug/TaxReportData6a96a1b92f11jMY2M.csv": {
+    "synced": true,
+    "synced_at": "2026-09-13 15:51:18",
+    "drive_file_id": "1mIGRS2CXK0dyAE3GH9ZlCRfcE6BRxuZL",
+    "party_code": "MY2"
+  },
+  "MYNTRA/aug/TaxReportData6a9658ce11540509M.csv": {
+    "synced": true,
+    "synced_at": "2026-09-13 15:51:08",
+    "drive_file_id": "17NF2oyVnfPZ_af3ahCLnTIASPRjk183L",
+    "party_code": "509"
+  },
+  "MYNTRA/aug/TaxReportData6a96a365d7279271M.csv": {
+    "synced": true,
+    "synced_at": "2026-09-13 15:51:25",
+    "drive_file_id": "1Zsf0dL88Ymrah7hKc92zLy-1KJg5ztrb",
+    "party_code": "271"
+  }
+}
