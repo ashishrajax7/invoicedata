@@ -11,7 +11,7 @@ from urllib.parse import quote
 ZIP_STORAGE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'zip_storage')
 REGISTRY_FILE = os.path.join(ZIP_STORAGE_DIR, 'registry.json')
 VALID_PLATFORMS = ['AJIO', 'MYNTRA', 'FLIPKART']
-ZIP_EXPIRY_HOURS = float(os.environ.get('ZIP_EXPIRY_HOURS', 2.0))
+ZIP_EXPIRY_HOURS = float(os.environ.get('ZIP_EXPIRY_HOURS', 5.0))
 _last_cleanup_timestamp = 0.0
 
 def normalize_platform(platform):
@@ -633,7 +633,7 @@ def clear_zip_storage_data(platform=None):
 
 def clean_expired_zip_data(expiry_hours=None, force=False):
     """
-    Cleans up any party folders and registry entries older than expiry_hours (default 2 hours).
+    Cleans up any party folders and registry entries older than expiry_hours (default 5 hours).
     Also prunes stale temporary bundle zips and old backups to stay within Render's 512MB limit.
     Optimized for zero server load with rate-limited check (cooldown of 60 seconds).
     """
