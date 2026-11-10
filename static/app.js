@@ -129,6 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
     switchUploadSubTab('zip');
     loadData(appData.active_file || '__all__', false);
     loadZipStatus(false);
+    checkAndPollSyncStatus();
 
     window.addEventListener('beforeunload', (e) => {
         if (hasUnsavedChanges) {
@@ -300,17 +301,18 @@ function switchSummarySubTab(subTabId) {
     activeSummarySubTab = subTabId;
 
     const brandColors = {
+        all: 'text-indigo-600',
         shortlist: 'text-purple-600',
         partydetails: 'text-blue-600',
         summary: 'text-amber-600',
         uploadbox: 'text-emerald-600'
     };
 
-    ['shortlist', 'partydetails', 'summary', 'uploadbox'].forEach(st => {
+    ['all', 'shortlist', 'partydetails', 'summary', 'uploadbox'].forEach(st => {
         const btn = document.getElementById(`subtab-${st}`);
         const panel = document.getElementById(`subpanel-${st}`);
         if (btn) {
-            btn.classList.remove('active', 'bg-purple-600', 'bg-blue-600', 'bg-amber-600', 'bg-emerald-600', 'text-white', 'shadow-xs', 'bg-white', 'border-purple-200', 'text-purple-700');
+            btn.classList.remove('active', 'bg-indigo-600', 'bg-purple-600', 'bg-blue-600', 'bg-amber-600', 'bg-emerald-600', 'text-white', 'shadow-xs', 'bg-white', 'border-purple-200', 'text-purple-700', 'text-indigo-700');
             btn.classList.add('text-slate-600');
             const icon = btn.querySelector('i');
             if (icon) {
@@ -326,7 +328,8 @@ function switchSummarySubTab(subTabId) {
     if (activeBtn) {
         activeBtn.classList.remove('text-slate-600');
         activeBtn.classList.add('active', 'text-white', 'shadow-xs');
-        if (subTabId === 'shortlist') activeBtn.classList.add('bg-purple-600');
+        if (subTabId === 'all') activeBtn.classList.add('bg-indigo-600');
+        else if (subTabId === 'shortlist') activeBtn.classList.add('bg-purple-600');
         else if (subTabId === 'partydetails') activeBtn.classList.add('bg-blue-600');
         else if (subTabId === 'summary') activeBtn.classList.add('bg-amber-600');
         else if (subTabId === 'uploadbox') activeBtn.classList.add('bg-emerald-600');
@@ -469,9 +472,80 @@ function renderTopOverviewZipCounts() {
     if (elFkSum) elFkSum.textContent = fkSummary;
 }
 
+const BLOCK_STATUS_OPTIONS = [
+    { value: "", label: "-- Select Status --" },
+    { value: "ALL DONE SALE AND PURCHASE", label: "ALL DONE SALE AND PURCHASE" },
+    { value: "ONLY SALE DONE", label: "ONLY SALE DONE" },
+    { value: "PENDING DUE TO SALE PRICE DISPUTE", label: "PENDING DUE TO SALE PRICE DISPUTE" },
+    { value: "PENDING DUE TO PURCHASE PRICE DISPUTE", label: "PENDING DUE TO PURCHASE PRICE DISPUTE" },
+    { value: "PENDING DUE TO 0 PRICE IN SALE", label: "PENDING DUE TO 0 PRICE IN SALE" },
+    { value: "PENDING DUE TO 0 PRICE IN PURCHASE", label: "PENDING DUE TO 0 PRICE IN PURCHASE" },
+    { value: "OTHERS", label: "OTHERS" }
+];
+
+function isStatusDone(status) {
+    const s = (status || '').toUpperCase().trim();
+    return s === 'DONE' || s === 'ALL DONE SALE AND PURCHASE' || s === 'ONLY SALE DONE';
+}
+
+function isStatusIssue(status) {
+    const s = (status || '').toUpperCase().trim();
+    return s === 'NOT' || s.includes('DISPUTE') || s.includes('0 PRICE') || s.startsWith('OTHER');
+}
+
+function getStatusTheme(status) {
+    const s = (status || '').toUpperCase().trim();
+    if (s === 'ALL DONE SALE AND PURCHASE' || s === 'DONE') {
+        return {
+            rowBorder: 'border-emerald-300 bg-emerald-50/20 hover:border-emerald-400',
+            selectClass: 'bg-emerald-50 text-emerald-950 border-emerald-300 font-medium focus:ring-emerald-500'
+        };
+    }
+    if (s === 'ONLY SALE DONE') {
+        return {
+            rowBorder: 'border-teal-300 bg-teal-50/20 hover:border-teal-400',
+            selectClass: 'bg-teal-50 text-teal-950 border-teal-300 font-medium focus:ring-teal-500'
+        };
+    }
+    if (s === 'PENDING DUE TO SALE PRICE DISPUTE') {
+        return {
+            rowBorder: 'border-amber-300 bg-amber-50/20 hover:border-amber-400',
+            selectClass: 'bg-amber-50 text-amber-950 border-amber-300 font-medium focus:ring-amber-500'
+        };
+    }
+    if (s === 'PENDING DUE TO PURCHASE PRICE DISPUTE') {
+        return {
+            rowBorder: 'border-orange-300 bg-orange-50/20 hover:border-orange-400',
+            selectClass: 'bg-orange-50 text-orange-950 border-orange-300 font-medium focus:ring-orange-500'
+        };
+    }
+    if (s === 'PENDING DUE TO 0 PRICE IN SALE') {
+        return {
+            rowBorder: 'border-rose-300 bg-rose-50/20 hover:border-rose-400',
+            selectClass: 'bg-rose-50 text-rose-950 border-rose-300 font-medium focus:ring-rose-500'
+        };
+    }
+    if (s === 'PENDING DUE TO 0 PRICE IN PURCHASE') {
+        return {
+            rowBorder: 'border-red-300 bg-red-50/20 hover:border-red-400',
+            selectClass: 'bg-red-50 text-red-950 border-red-300 font-medium focus:ring-red-500'
+        };
+    }
+    if (s === 'OTHERS' || s.startsWith('OTHERS:') || s === 'NOT' || s === 'OTHER') {
+        return {
+            rowBorder: 'border-purple-300 bg-purple-50/20 hover:border-purple-400',
+            selectClass: 'bg-purple-50 text-purple-950 border-purple-300 font-medium focus:ring-purple-500'
+        };
+    }
+    return {
+        rowBorder: 'border-slate-200 bg-white hover:border-slate-300',
+        selectClass: 'bg-slate-50 text-slate-800 border-slate-300 font-normal focus:ring-indigo-500'
+    };
+}
+
 function renderKPIs() {
     const slItems = (appData.block_sheets && appData.block_sheets['Short List']) || [];
-    const slDone = slItems.filter(s => (s.status || '').toUpperCase() === 'DONE').length;
+    const slDone = slItems.filter(s => isStatusDone(s.status)).length;
     const elSlCount = document.getElementById('kpiShortlistCount');
     if (elSlCount) elSlCount.textContent = slItems.length;
     const elSlDone = document.getElementById('kpiShortlistDone');
@@ -483,20 +557,20 @@ function renderKPIs() {
     if (subCountSl) subCountSl.textContent = `${slDone}/${slItems.length}`;
 
     const pdItems = (appData.block_sheets && appData.block_sheets['Party Details']) || [];
-    const pdDone = pdItems.filter(s => (s.status || '').toUpperCase() === 'DONE').length;
-    const pdNot = pdItems.filter(s => (s.status || '').toUpperCase() === 'NOT').length;
+    const pdDone = pdItems.filter(s => isStatusDone(s.status)).length;
+    const pdNot = pdItems.filter(s => isStatusIssue(s.status)).length;
     const elPdCount = document.getElementById('kpiPartyDetailsCount');
     if (elPdCount) elPdCount.textContent = pdItems.length;
     const elPdDone = document.getElementById('kpiPartyDetailsDone');
     if (elPdDone) elPdDone.textContent = `${pdDone} Done`;
     const elPdNot = document.getElementById('kpiPartyDetailsNot');
-    if (elPdNot) elPdNot.textContent = `${pdNot} Not`;
+    if (elPdNot) elPdNot.textContent = `${pdNot} Issues`;
 
     const subCountPd = document.getElementById('subtabCountPartyDetails');
     if (subCountPd) subCountPd.textContent = `${pdDone}/${pdItems.length}`;
 
     const smItems = (appData.block_sheets && appData.block_sheets['Summary']) || [];
-    const smDone = smItems.filter(s => (s.status || '').toUpperCase() === 'DONE').length;
+    const smDone = smItems.filter(s => isStatusDone(s.status)).length;
     const elSmCount = document.getElementById('kpiSummaryCount');
     if (elSmCount) elSmCount.textContent = smItems.length;
     const elSmDone = document.getElementById('kpiSummaryDone');
@@ -507,7 +581,12 @@ function renderKPIs() {
     const subCountSm = document.getElementById('subtabCountSummary');
     if (subCountSm) subCountSm.textContent = `${smDone}/${smItems.length}`;
 
+    const totalSummaryDone = slDone + pdDone + smDone;
     const totalSummaryCount = slItems.length + pdItems.length + smItems.length;
+
+    const subCountAll = document.getElementById('subtabCountAll');
+    if (subCountAll) subCountAll.textContent = `${totalSummaryDone}/${totalSummaryCount}`;
+
     const elTabSummaryCount = document.getElementById('tabCountInvoiceSummary');
     if (elTabSummaryCount) elTabSummaryCount.textContent = `${totalSummaryCount}`;
 
@@ -515,6 +594,7 @@ function renderKPIs() {
 }
 
 function renderAllSheets() {
+    renderBlockSheet('All', 'container-All');
     renderBlockSheet('Short List', 'container-ShortList');
     renderBlockSheet('Party Details', 'container-PartyDetails');
     renderBlockSheet('Summary', 'container-Summary');
@@ -538,37 +618,49 @@ function setBlockFilter(sheetName, filterType) {
 }
 
 /**
- * Render Marketplace Block Sheet (No Strikethrough on DONE - Pure bold clean text)
+ * Render Marketplace Block Sheet (One Full Row Per Party, With Channel Badge & Dropdown)
  */
 function renderBlockSheet(sheetName, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
     container.innerHTML = '';
 
-    let items = appData.block_sheets[sheetName] || [];
+    let items = [];
+    if (sheetName === 'All') {
+        const sl = (appData.block_sheets && appData.block_sheets['Short List']) || [];
+        const pd = (appData.block_sheets && appData.block_sheets['Party Details']) || [];
+        const sm = (appData.block_sheets && appData.block_sheets['Summary']) || [];
+        sl.forEach(it => items.push({ ...it, _origSheet: 'Short List', platform: it.platform || 'AJIO' }));
+        pd.forEach(it => items.push({ ...it, _origSheet: 'Party Details', platform: it.platform || 'Myntra' }));
+        sm.forEach(it => items.push({ ...it, _origSheet: 'Summary', platform: it.platform || 'Flipkart' }));
+    } else {
+        items = (appData.block_sheets && appData.block_sheets[sheetName]) || [];
+    }
+
     const filter = sheetFilters[sheetName] || 'all';
 
     if (filter === 'done') {
-        items = items.filter(s => (s.status || '').toUpperCase() === 'DONE');
+        items = items.filter(s => isStatusDone(s.status));
     } else if (filter === 'not') {
-        items = items.filter(s => (s.status || '').toUpperCase() === 'NOT');
+        items = items.filter(s => isStatusIssue(s.status));
     } else if (filter === 'pending') {
-        items = items.filter(s => !s.status || (s.status.toUpperCase() !== 'DONE' && s.status.toUpperCase() !== 'NOT'));
+        items = items.filter(s => !s.status || s.status.trim() === '');
     }
 
     if (searchQuery) {
         items = items.filter(s => 
             (s.party_name || '').toLowerCase().includes(searchQuery) ||
             (s.invoice_range || '').toLowerCase().includes(searchQuery) ||
-            (s.source_file || '').toLowerCase().includes(searchQuery)
+            (s.source_file || '').toLowerCase().includes(searchQuery) ||
+            (s.platform || '').toLowerCase().includes(searchQuery)
         );
     }
 
-    const platformLabel = sheetName === 'Short List' ? 'AJIO' : sheetName === 'Party Details' ? 'Myntra' : 'Flipkart';
+    const platformLabel = sheetName === 'All' ? 'All Channels' : sheetName === 'Short List' ? 'AJIO' : sheetName === 'Party Details' ? 'Myntra' : 'Flipkart';
 
     if (items.length === 0) {
         container.innerHTML = `
-            <div class="col-span-full py-12 text-center text-slate-400 bg-white rounded-xl border border-slate-200">
+            <div class="w-full py-12 text-center text-slate-400 bg-white rounded-xl border border-slate-200 shadow-2xs">
                 <i class="fa-solid fa-folder-open text-4xl mb-2 text-slate-300"></i>
                 <p>No parties in <strong>${platformLabel}</strong>. Ready for new Excel upload!</p>
             </div>
@@ -579,45 +671,75 @@ function renderBlockSheet(sheetName, containerId) {
     const fragment = document.createDocumentFragment();
 
     items.forEach(item => {
-        const statusUpper = (item.status || '').toUpperCase();
-        const isDone = statusUpper === 'DONE';
-        const isNot = statusUpper === 'NOT';
-        const isPending = !isDone && !isNot;
+        const currentRaw = (item.status || '').trim();
+        const rawUpper = currentRaw.toUpperCase();
         const isRangeNotFound = (item.invoice_range || '').toLowerCase().includes('notfound') || (item.invoice_range || '').toUpperCase() === 'N/A';
+        const targetSheet = item._origSheet || sheetName;
 
-        const card = document.createElement('div');
-           let cardTheme = 'bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs';
-        let statusBadgeHtml = `
-            <button onclick="cycleBlockItemStatus('${sheetName}', ${item.id})" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-100/80 text-slate-600 border border-slate-200/80 hover:bg-slate-200/60 transition active:scale-95 cursor-pointer" title="Click to change status">
-                <i class="fa-regular fa-circle text-[9px] text-slate-400"></i>
-                <span>PENDING</span>
-            </button>
-        `;
+        let selectedVal = '';
+        let isOthers = false;
+        let customText = item.custom_status || '';
 
-        if (isDone) {
-            cardTheme = 'bg-white border-emerald-300 ring-1 ring-emerald-400/20 shadow-2xs';
-            statusBadgeHtml = `
-                <button onclick="cycleBlockItemStatus('${sheetName}', ${item.id})" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs hover:bg-emerald-100 transition active:scale-95 cursor-pointer" title="Click to change status">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    <i class="fa-solid fa-check text-[10px] text-emerald-600"></i>
-                    <span>DONE</span>
-                </button>
-            `;
-        } else if (isNot) {
-            cardTheme = 'bg-white border-rose-300 ring-1 ring-rose-400/20 shadow-2xs';
-            statusBadgeHtml = `
-                <button onclick="cycleBlockItemStatus('${sheetName}', ${item.id})" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs hover:bg-rose-100 transition active:scale-95 cursor-pointer" title="Click to change status">
-                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                    <i class="fa-solid fa-xmark text-[10px] text-rose-600"></i>
-                    <span>NOT</span>
-                </button>
-            `;
+        const knownValues = [
+            "ALL DONE SALE AND PURCHASE",
+            "ONLY SALE DONE",
+            "PENDING DUE TO SALE PRICE DISPUTE",
+            "PENDING DUE TO PURCHASE PRICE DISPUTE",
+            "PENDING DUE TO 0 PRICE IN SALE",
+            "PENDING DUE TO 0 PRICE IN PURCHASE"
+        ];
+
+        if (knownValues.includes(rawUpper)) {
+            selectedVal = rawUpper;
+        } else if (rawUpper === 'DONE') {
+            selectedVal = 'ALL DONE SALE AND PURCHASE';
+        } else if (rawUpper === 'OTHERS' || rawUpper.startsWith('OTHERS:') || rawUpper === 'OTHER' || rawUpper === 'NOT') {
+            selectedVal = 'OTHERS';
+            isOthers = true;
+            if (rawUpper.startsWith('OTHERS:')) {
+                customText = currentRaw.substring(7).trim();
+            }
+        } else if (currentRaw !== '') {
+            selectedVal = 'OTHERS';
+            isOthers = true;
+            customText = currentRaw;
+        } else {
+            selectedVal = '';
+        }
+
+        const theme = getStatusTheme(selectedVal || currentRaw);
+
+        // Determine platform / channel for the badge at the front
+        let platform = item.platform || '';
+        if (!platform) {
+            if (targetSheet === 'Short List') platform = 'AJIO';
+            else if (targetSheet === 'Party Details') platform = 'Myntra';
+            else if (targetSheet === 'Summary') platform = 'Flipkart';
+            else {
+                const inv = (item.invoice_range || '').toUpperCase();
+                if (inv.startsWith('AJ27S')) platform = 'AJIO';
+                else if (inv.startsWith('MY27S')) platform = 'Myntra';
+                else if (inv.startsWith('FK27S')) platform = 'Flipkart';
+                else platform = 'General';
+            }
+        }
+
+        let channelBadgeHtml = '';
+        const platUpper = platform.toUpperCase();
+        if (platUpper === 'AJIO') {
+            channelBadgeHtml = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-purple-100 text-purple-900 border border-purple-200/90 shrink-0 shadow-2xs"><i class="fa-solid fa-bag-shopping text-[10px] text-purple-600"></i>AJIO</span>`;
+        } else if (platUpper === 'MYNTRA') {
+            channelBadgeHtml = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-blue-100 text-blue-900 border border-blue-200/90 shrink-0 shadow-2xs"><i class="fa-solid fa-shirt text-[10px] text-blue-600"></i>Myntra</span>`;
+        } else if (platUpper === 'FLIPKART') {
+            channelBadgeHtml = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-amber-100 text-amber-950 border border-amber-200/90 shrink-0 shadow-2xs"><i class="fa-solid fa-cart-shopping text-[10px] text-amber-600"></i>Flipkart</span>`;
+        } else {
+            channelBadgeHtml = `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-800 border border-slate-200 shrink-0">${escapeHtml(platform)}</span>`;
         }
 
         // Check if ZIP files exist for this party
         const partyCodeMatch = (item.party_name || '').match(/^(\d+|[A-Za-z0-9]+)/);
         const pCode = partyCodeMatch ? partyCodeMatch[1] : '';
-        const pPlatform = sheetName === 'Short List' ? 'AJIO' : sheetName === 'Party Details' ? 'MYNTRA' : 'FLIPKART';
+        const pPlatform = platUpper === 'AJIO' ? 'AJIO' : platUpper === 'MYNTRA' ? 'MYNTRA' : 'FLIPKART';
         const zipParty = ((zipStatusData.platforms && zipStatusData.platforms[pPlatform]) ? zipStatusData.platforms[pPlatform].parties || [] : []).find(p => p.party_code === pCode);
 
         let zipPillsHtml = '';
@@ -631,7 +753,7 @@ function renderBlockSheet(sheetName, containerId) {
             if (zipParty.has_summary) pills.push('<span class="text-[9px] bg-purple-100 text-purple-800 font-bold px-1.5 py-0.5 rounded border border-purple-300" title="Summary Sheet Attached">SM</span>');
             if (pills.length > 0) {
                 zipPillsHtml = `
-                    <div class="mt-1.5 flex items-center justify-between text-[10px] bg-indigo-50/50 px-2 py-1 rounded-md border border-indigo-100/70">
+                    <div class="flex items-center gap-1.5 text-[10px] bg-indigo-50/60 px-2 py-1 rounded-md border border-indigo-100/70 shrink-0">
                         <span class="text-indigo-700 font-semibold flex items-center gap-1"><i class="fa-solid fa-file-zipper text-indigo-600"></i> ZIP:</span>
                         <div class="flex items-center gap-1">${pills.join('')}</div>
                     </div>
@@ -639,84 +761,76 @@ function renderBlockSheet(sheetName, containerId) {
             }
         }
 
-        let nameColor = 'text-slate-900';
-        if (sheetName === 'Short List') nameColor = 'text-purple-950 hover:text-purple-700';
-        else if (sheetName === 'Party Details') nameColor = 'text-blue-950 hover:text-blue-700';
-        else if (sheetName === 'Summary') nameColor = 'text-amber-950 hover:text-amber-700';
-        if (isDone) nameColor = 'text-emerald-950';
-        else if (isNot) nameColor = 'text-rose-950';
+        const sheetPrefix = sheetName.replace(/\s+/g, '');
 
-        card.className = `party-card group relative p-3.5 rounded-xl border transition-all duration-200 select-none flex flex-col justify-between min-h-[130px] ${cardTheme}`;
+        let optionsHtml = BLOCK_STATUS_OPTIONS.map(opt => {
+            const isSelected = opt.value === selectedVal;
+            return `<option value="${escapeHtml(opt.value)}" ${isSelected ? 'selected' : ''}>${escapeHtml(opt.label)}</option>`;
+        }).join('');
+
+        const card = document.createElement('div');
+        card.className = `party-card group relative px-4 py-2.5 rounded-xl border transition-all duration-150 select-none flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 w-full shadow-2xs ${theme.rowBorder}`;
 
         card.innerHTML = `
-            <div>
-                <!-- Top Row: Party Name & Status Badge -->
-                <div class="flex items-start justify-between gap-2">
-                    <div class="flex-1 min-w-0">
-                        <div class="font-bold text-sm tracking-tight leading-snug ${nameColor} dark-crisp editable-cell px-1.5 py-0.5 transition"
-                             contenteditable="true"
-                             onblur="handleBlockItemEdit('${sheetName}', ${item.id}, 'party_name', this.innerText)"
-                             onkeydown="handleCellKeydown(event, this)">
-                            ${escapeHtml(item.party_name)}
-                        </div>
-                    </div>
-                    <div class="shrink-0">
-                        ${statusBadgeHtml}
-                    </div>
+            <!-- Left: Channel Badge (Front), Sequence #, Party Info, Invoice Range, Dropdown, Custom Field, ZIP -->
+            <div class="flex items-center gap-2.5 flex-1 min-w-0 flex-wrap sm:flex-nowrap">
+                <!-- Channel Badge (Front) -->
+                ${channelBadgeHtml}
+
+                <!-- Sequence # -->
+                <span class="text-xs font-mono font-medium text-slate-500 bg-slate-100/90 px-2 py-0.5 rounded border border-slate-200 shrink-0">
+                    #${item.id}
+                </span>
+
+                <!-- Party Name (Dark slate-900, crisp, font-medium, editable) -->
+                <div class="font-medium text-sm tracking-tight text-slate-900 editable-cell px-2 py-0.5 rounded transition min-w-[180px] max-w-[260px] shrink-0 truncate"
+                     contenteditable="true"
+                     title="Click to edit Party Name"
+                     onblur="handleBlockItemEdit('${targetSheet}', ${item.id}, 'party_name', this.innerText)"
+                     onkeydown="handleCellKeydown(event, this)">
+                    ${escapeHtml(item.party_name)}
                 </div>
 
-                <!-- Middle Row: Invoice Range Monospace Container -->
-                <div class="mt-2 flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-indigo-50/60 border border-indigo-100 text-xs font-mono">
-                    <div class="flex items-center gap-1.5 min-w-0 flex-1">
-                        <i class="fa-solid fa-barcode text-xs ${isDone ? 'text-emerald-600' : isNot ? 'text-rose-600' : 'text-indigo-500'}"></i>
-                        <span class="${isRangeNotFound ? 'text-rose-600 font-bold italic' : 'text-indigo-950 font-bold'} truncate editable-cell px-1 py-0.5"
-                              contenteditable="true"
-                              onblur="handleBlockItemEdit('${sheetName}', ${item.id}, 'invoice_range', this.innerText)"
-                              onkeydown="handleCellKeydown(event, this)">
-                            ${escapeHtml(item.invoice_range || 'N/A')}
-                        </span>
-                    </div>
-                    <span class="text-[10px] font-sans font-semibold text-indigo-400 shrink-0 ml-1">#${item.id}</span>
+                <!-- Invoice Range (Teal color, font-medium, font-mono, editable) -->
+                <div class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-teal-50/80 border border-teal-200/90 text-xs font-mono font-medium text-teal-900 shrink-0">
+                    <i class="fa-solid fa-barcode text-xs text-teal-600"></i>
+                    <span class="${isRangeNotFound ? 'text-rose-600 font-semibold italic' : 'text-teal-950 font-medium'} editable-cell px-1 py-0.5 rounded truncate"
+                          contenteditable="true"
+                          title="Click to edit Invoice Range"
+                          onblur="handleBlockItemEdit('${targetSheet}', ${item.id}, 'invoice_range', this.innerText)"
+                          onkeydown="handleCellKeydown(event, this)">
+                        ${escapeHtml(item.invoice_range || 'N/A')}
+                    </span>
                 </div>
 
+                <!-- Status Dropdown (Next to invoice range - ml-1) -->
+                <div class="flex items-center gap-2 shrink-0 ml-1">
+                    <select onchange="handleBlockItemStatusDropdown('${targetSheet}', ${item.id}, this.value)"
+                            class="text-xs px-2.5 py-1 rounded-lg border focus:outline-none transition cursor-pointer shadow-2xs ${theme.selectClass}">
+                        ${optionsHtml}
+                    </select>
+
+                    <!-- Custom Field for OTHERS -->
+                    <input type="text"
+                           id="custom-input-${sheetPrefix}-${item.id}"
+                           value="${escapeHtml(customText)}"
+                           oninput="handleBlockItemCustomStatus('${targetSheet}', ${item.id}, this.value)"
+                           placeholder="Type custom reason / details..."
+                           class="${isOthers ? '' : 'hidden'} text-xs px-2.5 py-1 rounded-lg border border-purple-300 bg-white text-purple-950 font-medium placeholder-purple-400 focus:outline-none focus:ring-1 focus:ring-purple-500 w-56 sm:w-64 transition shadow-2xs">
+                </div>
+
+                <!-- ZIP Pills -->
                 ${zipPillsHtml}
             </div>
 
-            <!-- Bottom Row: Quick Status Triggers & Actions -->
-            <div class="flex items-center justify-between pt-2 mt-2 border-t border-slate-100 text-xs">
-                <!-- Status Toggle Buttons -->
-                <div class="flex items-center gap-1">
-                    <button onclick="cycleBlockItemStatus('${sheetName}', ${item.id}, 'DONE')" 
-                            class="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium transition active:scale-95 ${isDone ? 'bg-emerald-600 text-white shadow-2xs' : 'text-emerald-700 hover:bg-emerald-100/80 bg-emerald-50/60 border border-emerald-200/60'}" 
-                            title="Mark as Done">
-                        <i class="fa-solid fa-check text-[10px]"></i>
-                        <span>Done</span>
-                    </button>
-                    
-                    <button onclick="cycleBlockItemStatus('${sheetName}', ${item.id}, 'NOT')" 
-                            class="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium transition active:scale-95 ${isNot ? 'bg-rose-600 text-white shadow-2xs' : 'text-rose-700 hover:bg-rose-100/80 bg-rose-50/60 border border-rose-200/60'}" 
-                            title="Mark as Not">
-                        <i class="fa-solid fa-xmark text-[10px]"></i>
-                        <span>Not</span>
-                    </button>
-
-                    <button onclick="cycleBlockItemStatus('${sheetName}', ${item.id}, '')" 
-                            class="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-normal text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition active:scale-95" 
-                            title="Clear Status">
-                        <i class="fa-regular fa-circle text-[9px]"></i>
-                        <span>Reset</span>
-                    </button>
-                </div>
-
-                <!-- Card Action Icons -->
-                <div class="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition">
-                    <button onclick="openEditBlockModal('${sheetName}', ${item.id})" class="p-1 text-slate-400 hover:text-indigo-600 transition" title="Edit">
-                        <i class="fa-regular fa-pen-to-square text-xs"></i>
-                    </button>
-                    <button onclick="deleteBlockItem('${sheetName}', ${item.id})" class="p-1 text-slate-400 hover:text-rose-600 transition" title="Delete">
-                        <i class="fa-regular fa-trash-can text-xs"></i>
-                    </button>
-                </div>
+            <!-- Right Actions: Edit & Delete Icons -->
+            <div class="flex items-center gap-1 shrink-0 ml-auto lg:ml-0 pl-2 border-l border-slate-200">
+                <button onclick="openEditBlockItemModal('${targetSheet}', ${item.id})" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition" title="Edit Party Details">
+                    <i class="fa-regular fa-pen-to-square text-xs"></i>
+                </button>
+                <button onclick="deleteBlockItem('${targetSheet}', ${item.id})" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition" title="Delete Party">
+                    <i class="fa-regular fa-trash-can text-xs"></i>
+                </button>
             </div>
         `;
         fragment.appendChild(card);
@@ -742,7 +856,33 @@ function handleBlockItemEdit(sheetName, itemId, field, newVal) {
         item[field] = cleanVal;
         setUnsavedState(true);
         renderKPIs();
+        renderAllSheets();
     }
+}
+
+function handleBlockItemStatusDropdown(sheetName, itemId, newStatus) {
+    const items = appData.block_sheets[sheetName] || [];
+    const item = items.find(s => s.id === itemId);
+    if (!item) return;
+
+    item.status = newStatus;
+    if (newStatus !== 'OTHERS') {
+        item.custom_status = '';
+    }
+    setUnsavedState(true);
+    renderKPIs();
+    renderAllSheets();
+}
+
+function handleBlockItemCustomStatus(sheetName, itemId, customVal) {
+    const items = appData.block_sheets[sheetName] || [];
+    const item = items.find(s => s.id === itemId);
+    if (!item) return;
+
+    item.custom_status = customVal;
+    item.status = customVal.trim() ? `OTHERS: ${customVal.trim()}` : 'OTHERS';
+    setUnsavedState(true);
+    renderKPIs();
 }
 
 function cycleBlockItemStatus(sheetName, itemId, explicitStatus = null) {
@@ -754,25 +894,33 @@ function cycleBlockItemStatus(sheetName, itemId, explicitStatus = null) {
         item.status = explicitStatus;
     } else {
         const cur = (item.status || '').toUpperCase();
-        if (cur === '') item.status = 'DONE';
-        else if (cur === 'DONE') item.status = 'NOT';
+        if (cur === '') item.status = 'ALL DONE SALE AND PURCHASE';
+        else if (cur === 'ALL DONE SALE AND PURCHASE') item.status = 'ONLY SALE DONE';
         else item.status = '';
     }
 
     setUnsavedState(true);
-    const prefix = sheetName.replace(/\s+/g, '');
-    renderBlockSheet(sheetName, `container-${prefix}`);
     renderKPIs();
+    renderAllSheets();
 }
 
-function markAllBlockSheet(sheetName, targetStatus = 'DONE') {
+function markAllBlockSheet(sheetName, targetStatus = 'ALL DONE SALE AND PURCHASE') {
+    if (sheetName === 'All') {
+        ['Short List', 'Party Details', 'Summary'].forEach(s => {
+            (appData.block_sheets[s] || []).forEach(it => it.status = targetStatus);
+        });
+        setUnsavedState(true);
+        renderAllSheets();
+        renderKPIs();
+        showToast(`All Channels: Marked all as ${targetStatus || 'PENDING'}`, 'success');
+        return;
+    }
     const items = appData.block_sheets[sheetName] || [];
     items.forEach(s => {
         s.status = targetStatus;
     });
     setUnsavedState(true);
-    const prefix = sheetName.replace(/\s+/g, '');
-    renderBlockSheet(sheetName, `container-${prefix}`);
+    renderAllSheets();
     renderKPIs();
     const label = sheetName === 'Short List' ? 'AJIO' : sheetName === 'Party Details' ? 'Myntra' : 'Flipkart';
     showToast(`${label}: Marked all as ${targetStatus || 'PENDING'}`, 'success');
@@ -860,6 +1008,28 @@ async function clearAllUploadedData() {
  * Clear data for a single sheet (using Custom Modal)
  */
 async function clearSheetData(sheetName) {
+    if (sheetName === 'All') {
+        const confirmed = await showCustomConfirm({
+            title: 'Clear All Channels?',
+            message: 'Are you sure you want to remove all parties from AJIO, Myntra, and Flipkart?',
+            icon: 'fa-trash-can',
+            iconColor: 'text-rose-600',
+            iconBg: 'bg-rose-100',
+            confirmText: 'Clear All',
+            confirmBtnClass: 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30'
+        });
+        if (!confirmed) return;
+
+        ['Short List', 'Party Details', 'Summary'].forEach(s => {
+            appData.block_sheets[s] = [];
+        });
+        setUnsavedState(true);
+        renderAllSheets();
+        renderKPIs();
+        showToast('Cleared all items across all platforms', 'info');
+        return;
+    }
+
     const label = sheetName === 'Short List' ? 'AJIO' : sheetName === 'Party Details' ? 'Myntra' : 'Flipkart';
     const confirmed = await showCustomConfirm({
         title: `Clear ${label}?`,
@@ -873,16 +1043,28 @@ async function clearSheetData(sheetName) {
     if (!confirmed) return;
 
     appData.block_sheets[sheetName] = [];
-    const prefix = sheetName.replace(/\s+/g, '');
-    renderBlockSheet(sheetName, `container-${prefix}`);
     setUnsavedState(true);
+    renderAllSheets();
     renderKPIs();
     showToast(`Cleared all items from ${label}`, 'info');
 }
 
 function copyBlockSheetToClipboard(sheetName) {
-    const items = appData.block_sheets[sheetName] || [];
-    const label = sheetName === 'Short List' ? 'AJIO' : sheetName === 'Party Details' ? 'Myntra' : 'Flipkart';
+    let items = [];
+    let label = '';
+    if (sheetName === 'All') {
+        label = 'ALL CHANNELS';
+        const sl = (appData.block_sheets && appData.block_sheets['Short List']) || [];
+        const pd = (appData.block_sheets && appData.block_sheets['Party Details']) || [];
+        const sm = (appData.block_sheets && appData.block_sheets['Summary']) || [];
+        sl.forEach(it => items.push({ ...it, platform: 'AJIO' }));
+        pd.forEach(it => items.push({ ...it, platform: 'Myntra' }));
+        sm.forEach(it => items.push({ ...it, platform: 'Flipkart' }));
+    } else {
+        label = sheetName === 'Short List' ? 'AJIO' : sheetName === 'Party Details' ? 'Myntra' : 'Flipkart';
+        items = appData.block_sheets[sheetName] || [];
+    }
+
     if (items.length === 0) {
         showToast(`${label} is empty`, 'warning');
         return;
@@ -893,9 +1075,22 @@ function copyBlockSheetToClipboard(sheetName) {
     text += `====================================\n\n`;
 
     items.forEach(item => {
-        const st = (item.status || '').toUpperCase();
-        const stLabel = st === 'DONE' ? '✅ DONE' : st === 'NOT' ? '❌ NOT' : '⏳ PENDING';
-        text += `• ${item.party_name} [${stLabel}]\n`;
+        const st = (item.status || '').trim();
+        let stLabel = '⏳ PENDING';
+        if (st === 'ALL DONE SALE AND PURCHASE' || st === 'DONE') stLabel = '✅ ALL DONE (SALE & PURCHASE)';
+        else if (st === 'ONLY SALE DONE') stLabel = '✅ ONLY SALE DONE';
+        else if (st.includes('SALE PRICE DISPUTE')) stLabel = '⚠️ SALE PRICE DISPUTE';
+        else if (st.includes('PURCHASE PRICE DISPUTE')) stLabel = '⚠️ PURCHASE PRICE DISPUTE';
+        else if (st.includes('0 PRICE IN SALE')) stLabel = '⚠️ 0 PRICE IN SALE';
+        else if (st.includes('0 PRICE IN PURCHASE')) stLabel = '⚠️ 0 PRICE IN PURCHASE';
+        else if (st.startsWith('OTHERS:') || st === 'OTHERS') {
+            const detail = item.custom_status || (st.startsWith('OTHERS:') ? st.substring(7).trim() : '');
+            stLabel = detail ? `📝 OTHER: ${detail}` : '📝 OTHER';
+        } else if (st) {
+            stLabel = `📝 ${st}`;
+        }
+        const platTag = item.platform ? `[${item.platform.toUpperCase()}] ` : '';
+        text += `• ${platTag}${item.party_name} [${stLabel}]\n`;
         text += `  Range: ${item.invoice_range || 'N/A'}\n\n`;
     });
 
@@ -1369,6 +1564,18 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
+function getPlatformChannelBadge(platform) {
+    const platUpper = String(platform || '').toUpperCase();
+    if (platUpper === 'AJIO') {
+        return `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-purple-100 text-purple-900 border border-purple-200/90 shrink-0 shadow-2xs"><i class="fa-solid fa-bag-shopping text-[10px] text-purple-600"></i>AJIO</span>`;
+    } else if (platUpper === 'MYNTRA') {
+        return `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-100 text-blue-900 border border-blue-200/90 shrink-0 shadow-2xs"><i class="fa-solid fa-shirt text-[10px] text-blue-600"></i>Myntra</span>`;
+    } else if (platUpper === 'FLIPKART') {
+        return `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-100 text-amber-950 border border-amber-200/90 shrink-0 shadow-2xs"><i class="fa-solid fa-cart-shopping text-[10px] text-amber-600"></i>Flipkart</span>`;
+    }
+    return `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-800 border border-slate-200 shrink-0">${escapeHtml(platform || '')}</span>`;
+}
+
 // ==========================================
 // 📦 ZIP BUNDLE MANAGER STATE & FUNCTIONS
 // ==========================================
@@ -1394,25 +1601,29 @@ function switchZipPlatform(platform) {
     const orderTypeLabel = 'OD';
     
     // Update platform button styles
-    ['AJIO', 'MYNTRA', 'FLIPKART'].forEach(p => {
+    ['ALL', 'AJIO', 'MYNTRA', 'FLIPKART'].forEach(p => {
         const btn = document.getElementById(`zipPlatformBtn-${p}`);
         if (btn) {
             const icon = btn.querySelector('i');
             if (p === zipActivePlatform) {
-                if (p === 'AJIO') {
-                    btn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-purple-600 text-white shadow-sm';
-                } else if (p === 'MYNTRA') {
-                    btn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-blue-600 text-white shadow-sm';
-                } else {
-                    btn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-amber-600 text-white shadow-sm';
-                }
+                let bgClass = 'bg-slate-900';
+                if (p === 'ALL') bgClass = 'bg-indigo-600';
+                else if (p === 'AJIO') bgClass = 'bg-purple-600';
+                else if (p === 'MYNTRA') bgClass = 'bg-blue-600';
+                else if (p === 'FLIPKART') bgClass = 'bg-amber-600';
+
+                btn.className = `px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${bgClass} text-white shadow-sm`;
                 if (icon) {
                     icon.className = icon.className.replace(/text-[a-z]+-[0-9]+/g, '').replace('text-white', '').trim() + ' text-white';
                 }
             } else {
                 btn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5';
                 if (icon) {
-                    const iconColor = p === 'AJIO' ? 'text-purple-600' : (p === 'MYNTRA' ? 'text-blue-600' : 'text-amber-600');
+                    let iconColor = 'text-slate-600';
+                    if (p === 'ALL') iconColor = 'text-indigo-600';
+                    else if (p === 'AJIO') iconColor = 'text-purple-600';
+                    else if (p === 'MYNTRA') iconColor = 'text-blue-600';
+                    else if (p === 'FLIPKART') iconColor = 'text-amber-600';
                     icon.className = icon.className.replace(/text-[a-z]+-[0-9]+/g, '').replace('text-white', '').trim() + ' ' + iconColor;
                 }
             }
@@ -1421,8 +1632,10 @@ function switchZipPlatform(platform) {
 
     const badge = document.getElementById('zipPlatformBadge');
     if (badge) {
-        badge.textContent = zipActivePlatform;
-        if (zipActivePlatform === 'AJIO') {
+        badge.textContent = zipActivePlatform === 'ALL' ? 'ALL (Combined)' : zipActivePlatform;
+        if (zipActivePlatform === 'ALL') {
+            badge.className = 'text-xs bg-indigo-100 text-indigo-800 border border-indigo-200 px-2.5 py-0.5 rounded-md font-bold';
+        } else if (zipActivePlatform === 'AJIO') {
             badge.className = 'text-xs bg-purple-100 text-purple-800 border border-purple-200 px-2.5 py-0.5 rounded-md font-bold';
         } else if (zipActivePlatform === 'MYNTRA') {
             badge.className = 'text-xs bg-blue-100 text-blue-800 border border-blue-200 px-2.5 py-0.5 rounded-md font-bold';
@@ -1446,21 +1659,29 @@ function switchZipPlatform(platform) {
     });
 
     // Update secondary platform switcher buttons
-    ['AJIO', 'MYNTRA', 'FLIPKART'].forEach(p => {
+    ['ALL', 'AJIO', 'MYNTRA', 'FLIPKART'].forEach(p => {
         const btn = document.getElementById(`filesZipBtn-${p}`);
         if (btn) {
             const icon = btn.querySelector('i');
             if (p === zipActivePlatform) {
-                if (p === 'AJIO') btn.className = 'filesZipPlatBtn px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-purple-600 text-white shadow-xs';
-                else if (p === 'MYNTRA') btn.className = 'filesZipPlatBtn px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-blue-600 text-white shadow-xs';
-                else btn.className = 'filesZipPlatBtn px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-amber-600 text-white shadow-xs';
+                let bgClass = 'bg-slate-900';
+                if (p === 'ALL') bgClass = 'bg-indigo-600';
+                else if (p === 'AJIO') bgClass = 'bg-purple-600';
+                else if (p === 'MYNTRA') bgClass = 'bg-blue-600';
+                else if (p === 'FLIPKART') bgClass = 'bg-amber-600';
+
+                btn.className = `filesZipPlatBtn px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${bgClass} text-white shadow-xs`;
                 if (icon) {
                     icon.className = icon.className.replace(/text-[a-z]+-[0-9]+/g, '').replace('text-white', '').trim() + ' text-white';
                 }
             } else {
                 btn.className = 'filesZipPlatBtn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5';
                 if (icon) {
-                    const iconColor = p === 'AJIO' ? 'text-purple-600' : (p === 'MYNTRA' ? 'text-blue-600' : 'text-amber-600');
+                    let iconColor = 'text-slate-600';
+                    if (p === 'ALL') iconColor = 'text-indigo-600';
+                    else if (p === 'AJIO') iconColor = 'text-purple-600';
+                    else if (p === 'MYNTRA') iconColor = 'text-blue-600';
+                    else if (p === 'FLIPKART') iconColor = 'text-amber-600';
                     icon.className = icon.className.replace(/text-[a-z]+-[0-9]+/g, '').replace('text-white', '').trim() + ' ' + iconColor;
                 }
             }
@@ -1469,8 +1690,10 @@ function switchZipPlatform(platform) {
 
     const filesBadge = document.getElementById('filesZipPlatformBadge');
     if (filesBadge) {
-        filesBadge.textContent = zipActivePlatform;
-        if (zipActivePlatform === 'AJIO') {
+        filesBadge.textContent = zipActivePlatform === 'ALL' ? 'ALL (Combined)' : zipActivePlatform;
+        if (zipActivePlatform === 'ALL') {
+            filesBadge.className = 'text-xs bg-indigo-100 text-indigo-700 px-2.5 py-0.5 rounded-full font-bold';
+        } else if (zipActivePlatform === 'AJIO') {
             filesBadge.className = 'text-xs bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full font-bold';
         } else if (zipActivePlatform === 'MYNTRA') {
             filesBadge.className = 'text-xs bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full font-bold';
@@ -1486,7 +1709,7 @@ function switchZipPlatform(platform) {
     if (col1Header) col1Header.textContent = '1. OD File';
 
     const titleEl = document.getElementById('partyRegistryTableTitle');
-    if (titleEl) titleEl.textContent = `${zipActivePlatform} Party Files Registry`;
+    if (titleEl) titleEl.textContent = zipActivePlatform === 'ALL' ? 'All Platforms Party Files Registry' : `${zipActivePlatform} Party Files Registry`;
 
     renderZipPlatformKPIs();
     populatePartySelectorDropdown();
@@ -1527,8 +1750,16 @@ async function loadZipStatus(showToastMsg = false) {
 }
 
 function renderZipPlatformKPIs() {
-    const pData = zipStatusData.platforms[zipActivePlatform] || { parties: [], stats: {} };
-    const parties = pData.parties || [];
+    let parties = [];
+    if (zipActivePlatform === 'ALL') {
+        ['AJIO', 'MYNTRA', 'FLIPKART'].forEach(plat => {
+            const pData = zipStatusData.platforms?.[plat] || { parties: [] };
+            parties = parties.concat(pData.parties || []);
+        });
+    } else {
+        const pData = zipStatusData.platforms?.[zipActivePlatform] || { parties: [], stats: {} };
+        parties = pData.parties || [];
+    }
     
     let orderFileCount = 0;
     let twoMoreCount = 0;
@@ -1559,17 +1790,27 @@ function populatePartySelectorDropdown() {
     const sel = document.getElementById('quickPartySelector');
     if (!sel) return;
     
-    const pData = zipStatusData.platforms[zipActivePlatform] || { parties: [] };
-    const parties = pData.parties || [];
+    let parties = [];
+    if (zipActivePlatform === 'ALL') {
+        ['AJIO', 'MYNTRA', 'FLIPKART'].forEach(plat => {
+            const pData = zipStatusData.platforms?.[plat] || { parties: [] };
+            (pData.parties || []).forEach(p => parties.push({ ...p, platform: p.platform || plat }));
+        });
+    } else {
+        const pData = zipStatusData.platforms?.[zipActivePlatform] || { parties: [] };
+        parties = (pData.parties || []).map(p => ({ ...p, platform: p.platform || zipActivePlatform }));
+    }
     
     sel.innerHTML = '<option value="">-- Choose Party Code --</option>';
     
     parties.forEach(p => {
         const opt = document.createElement('option');
         opt.value = p.party_code;
+        opt.dataset.platform = p.platform || '';
+        const platTag = zipActivePlatform === 'ALL' ? `[${p.platform}] ` : '';
         const displayName = p.party_name ? `${p.party_code} - ${p.party_name}` : `Party ${p.party_code}`;
         const statusMark = p.is_complete ? '[Ready]' : (p.has_order_file || p.has_od || p.has_pr || p.has_details || p.has_summary) ? '[Partial]' : '[Pending]';
-        opt.textContent = `${statusMark} ${displayName}`;
+        opt.textContent = `${platTag}${statusMark} ${displayName}`;
         if (p.party_code === currentPipelinePartyCode) {
             opt.selected = true;
         }
@@ -1628,7 +1869,7 @@ async function uploadPlatformZip(slotType, file) {
     }
 }
 
-async function selectPartyForPipeline(partyCode) {
+async function selectPartyForPipeline(partyCode, partyPlatform = null) {
     currentPipelinePartyCode = partyCode;
     const container = document.getElementById('partyPipelineDetailsContainer');
     if (!container) return;
@@ -1649,8 +1890,25 @@ async function selectPartyForPipeline(partyCode) {
         </div>
     `;
 
+    // Determine target platform
+    let targetPlatform = partyPlatform;
+    if (!targetPlatform || targetPlatform === 'ALL') {
+        if (zipActivePlatform !== 'ALL') {
+            targetPlatform = zipActivePlatform;
+        } else {
+            for (const plat of ['AJIO', 'MYNTRA', 'FLIPKART']) {
+                const parties = zipStatusData.platforms?.[plat]?.parties || [];
+                if (parties.some(p => p.party_code === partyCode)) {
+                    targetPlatform = plat;
+                    break;
+                }
+            }
+        }
+    }
+    targetPlatform = targetPlatform || 'AJIO';
+
     try {
-        const res = await fetch(`/api/zip/party_files?platform=${zipActivePlatform}&party_code=${encodeURIComponent(partyCode)}`);
+        const res = await fetch(`/api/zip/party_files?platform=${targetPlatform}&party_code=${encodeURIComponent(partyCode)}`);
         const json = await res.json();
         
         if (!json.success || !json.data) {
@@ -1795,14 +2053,24 @@ function renderZipRegistryTable() {
     const tbody = document.getElementById('zipRegistryTableBody');
     if (!tbody) return;
     
-    const pData = zipStatusData.platforms[zipActivePlatform] || { parties: [] };
-    let parties = pData.parties || [];
+    let parties = [];
+    if (zipActivePlatform === 'ALL') {
+        ['AJIO', 'MYNTRA', 'FLIPKART'].forEach(plat => {
+            const pData = zipStatusData.platforms?.[plat] || { parties: [] };
+            (pData.parties || []).forEach(p => parties.push({ ...p, platform: p.platform || plat }));
+        });
+    } else {
+        const pData = zipStatusData.platforms?.[zipActivePlatform] || { parties: [] };
+        parties = (pData.parties || []).map(p => ({ ...p, platform: p.platform || zipActivePlatform }));
+    }
+
     const orderLabel = 'OD';
 
     if (zipRegistrySearchQuery) {
         parties = parties.filter(p => 
             (p.party_code || '').toLowerCase().includes(zipRegistrySearchQuery) ||
-            (p.party_name || '').toLowerCase().includes(zipRegistrySearchQuery)
+            (p.party_name || '').toLowerCase().includes(zipRegistrySearchQuery) ||
+            (p.platform || '').toLowerCase().includes(zipRegistrySearchQuery)
         );
     }
 
@@ -1811,7 +2079,7 @@ function renderZipRegistryTable() {
             <tr>
                 <td colspan="6" class="text-center py-10 text-slate-400">
                     <i class="fa-solid fa-folder-open text-3xl mb-2 text-slate-300"></i>
-                    <p>No parties with ZIP files in <strong>${zipActivePlatform}</strong> yet.</p>
+                    <p>No parties with ZIP files in <strong>${zipActivePlatform === 'ALL' ? 'Any Platform' : zipActivePlatform}</strong> yet.</p>
                     <p class="text-[11px] text-slate-400 mt-1">Upload Order ZIP, Details ZIP, or Summary ZIP above to populate.</p>
                 </td>
             </tr>
@@ -1821,6 +2089,8 @@ function renderZipRegistryTable() {
 
     let rowsHtml = '';
     parties.forEach(p => {
+        const pPlat = (p.platform || '').toUpperCase();
+        const channelBadgeHtml = getPlatformChannelBadge(pPlat);
         const partyLabel = p.party_name ? `<strong>${escapeHtml(p.party_code)}</strong> - ${escapeHtml(p.party_name)}` : `<strong>${escapeHtml(p.party_code)}</strong>`;
         const targetOrderFile = p.order_file || p.od_file || p.pr_file;
         const hasOrder = Boolean(p.has_order_file || p.has_od || p.has_pr);
@@ -1874,7 +2144,8 @@ function renderZipRegistryTable() {
             <tr class="hover:bg-indigo-50/30 transition">
                 <td class="py-2.5 px-4 font-sans">
                     <div class="flex items-center space-x-2">
-                        <button onclick="selectPartyForPipeline('${p.party_code}')" class="text-indigo-700 hover:text-indigo-900 font-bold text-xs cursor-pointer" title="Click to view linked files">
+                        ${channelBadgeHtml}
+                        <button onclick="selectPartyForPipeline('${p.party_code}', '${p.platform}')" class="text-indigo-700 hover:text-indigo-900 font-bold text-xs cursor-pointer" title="Click to view linked files">
                             ${partyLabel}
                         </button>
                     </div>
@@ -1884,7 +2155,7 @@ function renderZipRegistryTable() {
                 <td class="py-2.5 px-4 text-center">${detailsCell}</td>
                 <td class="py-2.5 px-4 text-center">${summaryCell}</td>
                 <td class="py-2.5 px-4 text-center">
-                    <a href="/api/zip/download_party_bundle/${p.platform}/${p.party_code}" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition active:scale-95 shadow-2xs" title="Download all available files for ${p.party_code} as zip">
+                    <a href="/api/zip/download_party_bundle/${p.platform}/${p.party_code}" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition active:scale-95 shadow-2xs" title="Download all available files for ${p.party_code} (${p.platform}) as zip">
                         <i class="fa-solid fa-file-zipper text-xs"></i> Bundle
                     </a>
                 </td>
@@ -1896,18 +2167,20 @@ function renderZipRegistryTable() {
 }
 
 async function clearZipPlatformData() {
+    const isAll = (zipActivePlatform === 'ALL');
+    const platLabel = isAll ? 'ALL Platforms' : zipActivePlatform;
     const confirmed = await showCustomConfirm({
-        title: `Clear ${zipActivePlatform} ZIP Storage?`,
-        message: `This will remove all uploaded ZIP files, extracted files, 2 More Invoices, Details, and Summary sheets for ${zipActivePlatform}.\n\n🛡️ A full backup is automatically created.`,
+        title: `Clear ${platLabel} ZIP Storage?`,
+        message: `This will remove all uploaded ZIP files, extracted files, 2 More Invoices, Details, and Summary sheets for ${platLabel}.\n\n🛡️ A full backup is automatically created.`,
         icon: 'fa-trash-can',
         iconColor: 'text-rose-600',
         iconBg: 'bg-rose-100',
-        confirmText: `Clear ${zipActivePlatform} ZIPs`,
+        confirmText: `Clear ${platLabel} ZIPs`,
         confirmBtnClass: 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30'
     });
     if (!confirmed) return;
 
-    showToast(`Clearing ${zipActivePlatform} ZIP storage...`, 'info');
+    showToast(`Clearing ${platLabel} ZIP storage...`, 'info');
 
     try {
         const res = await fetch('/api/zip/clear', {
@@ -2028,6 +2301,7 @@ async function loadTaxReports(showToastMsg = true) {
         if (showToastMsg) showToast('Tax reports loaded', 'success');
 
         // Background sync check with Google Drive to keep manifest in sync
+        checkAndPollSyncStatus();
         fetch('/api/tax/sync_drive_structure', { method: 'POST' }).then(r => r.json()).then(dRes => {
             if (dRes && dRes.success) {
                 // Background Drive structure verified
@@ -2040,6 +2314,25 @@ async function loadTaxReports(showToastMsg = true) {
 }
 
 function getValidPlatformMonths(platform) {
+    if (platform === 'ALL') {
+        const monthSet = new Set();
+        ['AJIO', 'MYNTRA', 'FLIPKART'].forEach(p => {
+            const platMonthsObj = taxAllData.platforms?.[p]?.months || {};
+            Object.keys(platMonthsObj).forEach(m => {
+                const d = platMonthsObj[m];
+                if ((d.files && d.files.length > 0) || (d.old_files && d.old_files.length > 0)) {
+                    monthSet.add(m);
+                }
+            });
+        });
+        const monthOrder = (taxAllData.available_months || ['apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'jan', 'feb', 'mar']).map(m => m.toLowerCase());
+        return Array.from(monthSet).sort((a, b) => {
+            const idxA = monthOrder.indexOf(a.toLowerCase());
+            const idxB = monthOrder.indexOf(b.toLowerCase());
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            return a.localeCompare(b);
+        });
+    }
     const platMonthsObj = taxAllData.platforms?.[platform]?.months || {};
     return Object.keys(platMonthsObj).filter(m => {
         const d = platMonthsObj[m];
@@ -2078,22 +2371,30 @@ function switchTaxPlatform(platform) {
 }
 
 function renderTaxPlatformTabs() {
-    ['AJIO', 'MYNTRA', 'FLIPKART'].forEach(plat => {
+    ['ALL', 'AJIO', 'MYNTRA', 'FLIPKART'].forEach(plat => {
         const btn = document.getElementById(`taxPlatBtn-${plat}`);
         if (!btn) return;
         const icon = btn.querySelector('i');
         const isActive = (taxActivePlatform === plat);
         if (isActive) {
-            btn.className = `taxPlatBtn px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs text-white ${
-                plat === 'AJIO' ? 'bg-purple-600' : (plat === 'MYNTRA' ? 'bg-blue-600' : 'bg-amber-600')
-            }`;
+            let bgClass = 'bg-slate-900';
+            if (plat === 'ALL') bgClass = 'bg-indigo-600';
+            else if (plat === 'AJIO') bgClass = 'bg-purple-600';
+            else if (plat === 'MYNTRA') bgClass = 'bg-blue-600';
+            else if (plat === 'FLIPKART') bgClass = 'bg-amber-600';
+
+            btn.className = `taxPlatBtn px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs text-white ${bgClass}`;
             if (icon) {
                 icon.className = icon.className.replace(/text-[a-z]+-[0-9]+/g, '').replace('text-white', '').trim() + ' text-white';
             }
         } else {
             btn.className = 'taxPlatBtn px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5';
             if (icon) {
-                const iconColor = plat === 'AJIO' ? 'text-purple-600' : (plat === 'MYNTRA' ? 'text-blue-600' : 'text-amber-600');
+                let iconColor = 'text-slate-600';
+                if (plat === 'ALL') iconColor = 'text-indigo-600';
+                else if (plat === 'AJIO') iconColor = 'text-purple-600';
+                else if (plat === 'MYNTRA') iconColor = 'text-blue-600';
+                else if (plat === 'FLIPKART') iconColor = 'text-amber-600';
                 icon.className = icon.className.replace(/text-[a-z]+-[0-9]+/g, '').replace('text-white', '').trim() + ' ' + iconColor;
             }
         }
@@ -2105,11 +2406,10 @@ function renderTaxMonthChips() {
     if (!container) return;
     container.innerHTML = '';
 
-    const platMonthsObj = taxAllData.platforms?.[taxActivePlatform]?.months || {};
     const validMonths = getValidPlatformMonths(taxActivePlatform);
 
     if (validMonths.length === 0) {
-        container.innerHTML = `<span class="text-xs text-slate-400 italic px-2 py-1 flex items-center gap-1.5"><i class="fa-regular fa-folder-open text-slate-300"></i> No reports for ${taxActivePlatform}</span>`;
+        container.innerHTML = `<span class="text-xs text-slate-400 italic px-2 py-1 flex items-center gap-1.5"><i class="fa-regular fa-folder-open text-slate-300"></i> No reports for ${taxActivePlatform === 'ALL' ? 'Any Platform' : taxActivePlatform}</span>`;
         return;
     }
 
@@ -2119,7 +2419,16 @@ function renderTaxMonthChips() {
 
     validMonths.forEach(m => {
         const mLower = m.toLowerCase();
-        const filesCount = platMonthsObj[mLower]?.files?.length || 0;
+        let filesCount = 0;
+        if (taxActivePlatform === 'ALL') {
+            ['AJIO', 'MYNTRA', 'FLIPKART'].forEach(p => {
+                filesCount += taxAllData.platforms?.[p]?.months?.[mLower]?.files?.length || 0;
+            });
+        } else {
+            const platMonthsObj = taxAllData.platforms?.[taxActivePlatform]?.months || {};
+            filesCount = platMonthsObj[mLower]?.files?.length || 0;
+        }
+
         const isActive = (mLower === taxActiveMonth);
         const btn = document.createElement('button');
         btn.type = 'button';
@@ -2160,15 +2469,31 @@ function renderTaxFilesTable() {
 
     if (badgeMonth) badgeMonth.textContent = taxActiveMonth ? taxActiveMonth.toUpperCase() : 'NO DATA';
 
-    const monthData = taxActiveMonth ? (taxAllData.platforms?.[taxActivePlatform]?.months?.[taxActiveMonth] || { files: [], old_files: [] }) : { files: [], old_files: [] };
-    const allFiles = monthData.files || [];
-    const oldFiles = monthData.old_files || [];
+    let allFiles = [];
+    let oldFiles = [];
+
+    if (taxActivePlatform === 'ALL') {
+        ['AJIO', 'MYNTRA', 'FLIPKART'].forEach(p => {
+            const mData = taxActiveMonth ? (taxAllData.platforms?.[p]?.months?.[taxActiveMonth] || { files: [], old_files: [] }) : { files: [], old_files: [] };
+            (mData.files || []).forEach(f => {
+                allFiles.push({ ...f, _platform: p, _month: taxActiveMonth });
+            });
+            (mData.old_files || []).forEach(f => {
+                oldFiles.push({ ...f, _platform: p, _month: taxActiveMonth });
+            });
+        });
+    } else {
+        const monthData = taxActiveMonth ? (taxAllData.platforms?.[taxActivePlatform]?.months?.[taxActiveMonth] || { files: [], old_files: [] }) : { files: [], old_files: [] };
+        allFiles = (monthData.files || []).map(f => ({ ...f, _platform: taxActivePlatform, _month: taxActiveMonth }));
+        oldFiles = (monthData.old_files || []).map(f => ({ ...f, _platform: taxActivePlatform, _month: taxActiveMonth }));
+    }
 
     // Filter files
     const filteredFiles = allFiles.filter(f => {
         if (!taxSearchQuery) return true;
         return (f.filename || '').toLowerCase().includes(taxSearchQuery) ||
-               (f.party_code || '').toLowerCase().includes(taxSearchQuery);
+               (f.party_code || '').toLowerCase().includes(taxSearchQuery) ||
+               (f._platform || '').toLowerCase().includes(taxSearchQuery);
     });
 
     const unsyncedFiles = allFiles.filter(f => !f.is_synced);
@@ -2193,9 +2518,10 @@ function renderTaxFilesTable() {
 
     if (countEl) {
         if (!taxActiveMonth || allFiles.length === 0) {
-            countEl.textContent = `0 files in ${taxActivePlatform}`;
+            countEl.textContent = `0 files in ${taxActivePlatform === 'ALL' ? 'All Platforms' : taxActivePlatform}`;
         } else {
-            countEl.textContent = `${allFiles.length} file${allFiles.length === 1 ? '' : 's'} in ${taxActiveMonth.toUpperCase()} (${taxActivePlatform}) • ${allFiles.length - unsyncedCount} synced, ${unsyncedCount} pending`;
+            const platLabel = taxActivePlatform === 'ALL' ? 'ALL PLATFORMS' : taxActivePlatform;
+            countEl.textContent = `${allFiles.length} file${allFiles.length === 1 ? '' : 's'} in ${taxActiveMonth.toUpperCase()} (${platLabel}) • ${allFiles.length - unsyncedCount} synced, ${unsyncedCount} pending`;
         }
     }
 
@@ -2223,7 +2549,7 @@ function renderTaxFilesTable() {
                 <td colspan="6" class="text-center py-12 text-slate-400">
                     <div class="flex flex-col items-center justify-center space-y-2">
                         <i class="fa-regular fa-folder-open text-3xl text-slate-300"></i>
-                        <span class="text-xs font-semibold text-slate-600">${allFiles.length === 0 ? `No tax files found in ${taxActivePlatform}` : 'No matching files found'}</span>
+                        <span class="text-xs font-semibold text-slate-600">${allFiles.length === 0 ? `No tax files found in ${taxActivePlatform === 'ALL' ? 'Any Platform' : taxActivePlatform}` : 'No matching files found'}</span>
                         <p class="text-[11px] text-slate-400">Upload tax Excel / CSV files above to organize into months.</p>
                     </div>
                 </td>
@@ -2233,62 +2559,71 @@ function renderTaxFilesTable() {
         return;
     }
 
-    const platPillColor = taxActivePlatform === 'AJIO' 
-        ? 'bg-purple-100 text-purple-800 border-purple-200' 
-        : (taxActivePlatform === 'MYNTRA' ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-amber-100 text-amber-800 border-amber-200');
+    tbody.innerHTML = filteredFiles.map((f, idx) => {
+        const filePlat = f._platform || taxActivePlatform;
+        const fileMonth = f._month || taxActiveMonth;
+        const channelBadgeHtml = getPlatformChannelBadge(filePlat);
 
-        tbody.innerHTML = filteredFiles.map((f, idx) => {
-            const escapedFn = encodeURIComponent(f.filename);
-            const rawFnEscaped = f.filename.replace(/'/g, "\\'");
-            const isSynced = Boolean(f.is_synced);
+        const platPillColor = filePlat === 'AJIO' 
+            ? 'bg-purple-100 text-purple-800 border-purple-200' 
+            : (filePlat === 'MYNTRA' ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-amber-100 text-amber-800 border-amber-200');
 
-            // Red vs Green styling for filename and status badge
-            const nameColorClass = isSynced ? 'text-emerald-700 font-bold' : 'text-rose-600 font-bold';
-            const statusBadge = isSynced
-                ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"><i class="fa-solid fa-circle-check text-[9px]"></i> Synced</span>`
-                : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 animate-pulse"><i class="fa-solid fa-circle-exclamation text-[9px]"></i> Not Synced</span>`;
+        const escapedFn = encodeURIComponent(f.filename);
+        const rawFnEscaped = f.filename.replace(/'/g, "\\'");
+        const isSynced = Boolean(f.is_synced);
 
-            // Drive icon in actions column
-            const driveActionBtn = isSynced
-                ? `<button type="button" class="p-1.5 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition" title="Synced to Google Drive (${f.synced_at || 'Synced'})">
-                    <i class="fa-brands fa-google-drive text-xs"></i>
-                   </button>`
-                : `<button type="button" onclick="syncSingleFileRow('${taxActivePlatform}', '${taxActiveMonth}', '${rawFnEscaped}', this)" class="p-1.5 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition active:scale-95 shadow-2xs" title="Not synced to Google Drive. Click to sync this file now!">
-                    <i class="fa-brands fa-google-drive text-xs"></i>
-                   </button>`;
+        // Red vs Green styling for filename and status badge
+        const nameColorClass = isSynced ? 'text-emerald-700 font-bold' : 'text-rose-600 font-bold';
+        const statusBadge = isSynced
+            ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"><i class="fa-solid fa-circle-check text-[9px]"></i> Synced</span>`
+            : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 animate-pulse"><i class="fa-solid fa-circle-exclamation text-[9px]"></i> Not Synced</span>`;
 
-            return `
-                <tr id="tax-row-${escapedFn}" class="hover:bg-slate-50/80 transition group ${!isSynced ? 'bg-rose-50/20' : ''}">
-                    <td class="py-2.5 px-4 text-center text-slate-400 font-mono text-[11px]">${idx + 1}</td>
-                    <td class="py-2.5 px-4 font-mono text-xs flex items-center gap-2">
-                        <i class="fa-solid fa-file-excel ${isSynced ? 'text-emerald-600' : 'text-rose-500'} text-sm"></i>
-                        <span class="truncate max-w-xs sm:max-w-md ${nameColorClass}" title="${f.filename}">${f.filename}</span>
-                        ${statusBadge}
-                    </td>
-                    <td class="py-2.5 px-4 text-center">
-                        <span class="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold border ${platPillColor}">
-                            ${f.party_code || '-'}
-                        </span>
-                    </td>
-                    <td class="py-2.5 px-4 text-center text-slate-600 font-mono text-[11px]">${f.size_str || formatFileSize(f.size)}</td>
-                    <td class="py-2.5 px-4 text-center text-slate-500 text-[11px]">${f.updated_at || '-'}</td>
-                    <td class="py-2.5 px-4 text-center">
-                        <div class="inline-flex items-center gap-1.5">
-                            ${driveActionBtn}
-                            <button onclick="openTaxRenameModal('${taxActivePlatform}', '${taxActiveMonth}', '${rawFnEscaped}')" class="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition" title="Rename file">
-                                <i class="fa-solid fa-pen-to-square text-xs"></i>
-                            </button>
-                            <a href="/api/tax/download/${taxActivePlatform}/${taxActiveMonth}/${escapedFn}" download class="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Download Excel">
-                                <i class="fa-solid fa-download text-xs"></i>
-                            </a>
-                            <button onclick="deleteTaxReportFile('${taxActivePlatform}', '${taxActiveMonth}', '${rawFnEscaped}', false)" class="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Delete file">
-                                <i class="fa-solid fa-trash text-xs"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+        // Drive icon in actions column
+        const driveActionBtn = isSynced
+            ? `<button type="button" class="p-1.5 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition" title="Synced to Google Drive (${f.synced_at || 'Synced'})">
+                <i class="fa-brands fa-google-drive text-xs"></i>
+               </button>`
+            : `<button type="button" onclick="syncSingleFileRow('${filePlat}', '${fileMonth}', '${rawFnEscaped}', this)" class="p-1.5 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition active:scale-95 shadow-2xs" title="Not synced to Google Drive. Click to sync this file now!">
+                <i class="fa-brands fa-google-drive text-xs"></i>
+               </button>`;
+
+        const pCodeRaw = String(f.party_code || '').trim();
+        const isNoData = !pCodeRaw || pCodeRaw === '-' || pCodeRaw.toUpperCase() === 'NO DATA' || pCodeRaw.toUpperCase() === 'NODATA' || pCodeRaw.toUpperCase() === 'UNKNOWN' || (pCodeRaw.length > 7 && /^\d+$/.test(pCodeRaw));
+        const partyCodeBadge = isNoData 
+            ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-500 border border-slate-200/90 shadow-2xs" title="No order or party data in this file"><i class="fa-solid fa-ban text-[10px] text-slate-400"></i><span>NO DATA</span></span>`
+            : `<span class="inline-block px-2.5 py-0.5 rounded-md text-[11px] font-bold border ${platPillColor}">${escapeHtml(pCodeRaw)}</span>`;
+
+        return `
+            <tr id="tax-row-${escapedFn}" class="hover:bg-slate-50/80 transition group ${!isSynced ? 'bg-rose-50/20' : ''}">
+                <td class="py-2.5 px-4 text-center text-slate-400 font-mono text-[11px]">${idx + 1}</td>
+                <td class="py-2.5 px-4 font-mono text-xs flex items-center gap-2">
+                    ${channelBadgeHtml}
+                    <i class="fa-solid fa-file-excel ${isSynced ? 'text-emerald-600' : 'text-rose-500'} text-sm"></i>
+                    <span class="truncate max-w-xs sm:max-w-md ${nameColorClass}" title="${f.filename}">${f.filename}</span>
+                    ${statusBadge}
+                </td>
+                <td class="py-2.5 px-4 text-center">
+                    ${partyCodeBadge}
+                </td>
+                <td class="py-2.5 px-4 text-center text-slate-600 font-mono text-[11px]">${f.size_str || formatFileSize(f.size)}</td>
+                <td class="py-2.5 px-4 text-center text-slate-500 text-[11px]">${f.updated_at || '-'}</td>
+                <td class="py-2.5 px-4 text-center">
+                    <div class="inline-flex items-center gap-1.5">
+                        ${driveActionBtn}
+                        <button onclick="openTaxRenameModal('${filePlat}', '${fileMonth}', '${rawFnEscaped}')" class="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition" title="Rename file">
+                            <i class="fa-solid fa-pen-to-square text-xs"></i>
+                        </button>
+                        <a href="/api/tax/download/${filePlat}/${fileMonth}/${escapedFn}" download class="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Download Excel">
+                            <i class="fa-solid fa-download text-xs"></i>
+                        </a>
+                        <button onclick="deleteTaxReportFile('${filePlat}', '${fileMonth}', '${rawFnEscaped}', false)" class="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Delete file">
+                            <i class="fa-solid fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
 
     // Render old / archived files accordion
     renderTaxOldFilesAccordion(oldFiles);
@@ -2310,11 +2645,15 @@ function renderTaxOldFilesAccordion(oldFiles) {
     if (countEl) countEl.textContent = oldFiles.length;
 
     tbody.innerHTML = oldFiles.map(f => {
+        const fPlat = f._platform || taxActivePlatform;
+        const fMonth = f._month || taxActiveMonth;
+        const channelBadgeHtml = getPlatformChannelBadge(fPlat);
         const escapedFn = encodeURIComponent(f.filename);
         const rawFnEscaped = f.filename.replace(/'/g, "\\'");
         return `
             <tr class="hover:bg-slate-100/80 transition">
                 <td class="py-1.5 px-3 font-mono text-[11px] text-slate-700 flex items-center gap-2">
+                    ${channelBadgeHtml}
                     <i class="fa-solid fa-clock-rotate-left text-slate-400"></i>
                     <span class="truncate max-w-xs sm:max-w-md" title="${f.filename}">${f.filename}</span>
                 </td>
@@ -2322,10 +2661,10 @@ function renderTaxOldFilesAccordion(oldFiles) {
                 <td class="py-1.5 px-3 text-center text-slate-400 text-[11px]">${f.archived_at || '-'}</td>
                 <td class="py-1.5 px-3 text-center">
                     <div class="inline-flex items-center gap-1.5">
-                        <a href="/api/tax/download/${taxActivePlatform}/${taxActiveMonth}/${escapedFn}?is_old=true" download class="p-1 text-slate-500 hover:text-blue-600 rounded transition" title="Download">
+                        <a href="/api/tax/download/${fPlat}/${fMonth}/${escapedFn}?is_old=true" download class="p-1 text-slate-500 hover:text-blue-600 rounded transition" title="Download">
                             <i class="fa-solid fa-download text-xs"></i>
                         </a>
-                        <button onclick="deleteTaxReportFile('${taxActivePlatform}', '${taxActiveMonth}', '${rawFnEscaped}', true)" class="p-1 text-slate-500 hover:text-rose-600 rounded transition" title="Delete permanently">
+                        <button onclick="deleteTaxReportFile('${fPlat}', '${fMonth}', '${rawFnEscaped}', true)" class="p-1 text-slate-500 hover:text-rose-600 rounded transition" title="Delete permanently">
                             <i class="fa-solid fa-trash text-xs"></i>
                         </button>
                     </div>
@@ -2411,6 +2750,28 @@ async function uploadTaxReportFiles(platform, files) {
 function downloadActiveMonthZip() {
     if (!taxActivePlatform || !taxActiveMonth) {
         showToast('No active platform or month selected', 'error');
+        return;
+    }
+    if (taxActivePlatform === 'ALL') {
+        const activePlatformsWithFiles = ['AJIO', 'MYNTRA', 'FLIPKART'].filter(p => {
+            const mData = taxAllData.platforms?.[p]?.months?.[taxActiveMonth];
+            return mData && mData.files && mData.files.length > 0;
+        });
+        if (activePlatformsWithFiles.length === 0) {
+            showToast(`No files to download in ${taxActiveMonth.toUpperCase()} across any platform`, 'error');
+            return;
+        }
+        showToast(`Downloading ZIPs for ${activePlatformsWithFiles.join(', ')}...`, 'info');
+        activePlatformsWithFiles.forEach((p, idx) => {
+            setTimeout(() => {
+                const a = document.createElement('a');
+                a.href = `/api/tax/download_zip/${p}/${taxActiveMonth}`;
+                a.download = '';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }, idx * 800);
+        });
         return;
     }
     const monthData = taxAllData.platforms?.[taxActivePlatform]?.months?.[taxActiveMonth];
@@ -2552,6 +2913,51 @@ async function confirmDeleteAllMonthFiles() {
     const platform = taxActivePlatform;
     const month = taxActiveMonth;
     if (!platform || !month) return;
+
+    if (platform === 'ALL') {
+        let totalCount = 0;
+        const platsWithFiles = [];
+        ['AJIO', 'MYNTRA', 'FLIPKART'].forEach(p => {
+            const mData = taxAllData?.platforms?.[p]?.months?.[month];
+            const cnt = (mData?.files?.length || 0) + (mData?.old_files?.length || 0);
+            if (cnt > 0) {
+                totalCount += cnt;
+                platsWithFiles.push(`${p} (${cnt})`);
+            }
+        });
+
+        if (totalCount === 0) {
+            showToast(`No files to delete in ${month.toUpperCase()} across all platforms.`, 'info');
+            return;
+        }
+
+        const confirmed = await showCustomConfirm({
+            title: `Delete All ${month.toUpperCase()} Files Across ALL Platforms?`,
+            message: `Are you sure you want to delete ALL files in ${month.toUpperCase()} across ALL platforms (${platsWithFiles.join(', ')})?\n\nTotal: ${totalCount} file(s)\n\n⚠️ This will permanently remove them from BOTH local server and Google Drive.`,
+            icon: 'fa-trash-can',
+            iconColor: 'text-rose-600',
+            iconBg: 'bg-rose-100',
+            confirmText: `Delete All (${totalCount} Files)`,
+            confirmBtnClass: 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30'
+        });
+        if (!confirmed) return;
+
+        showToast(`Deleting all ${month.toUpperCase()} files across all platforms...`, 'info', 5000);
+        for (const p of ['AJIO', 'MYNTRA', 'FLIPKART']) {
+            try {
+                await fetch('/api/tax/delete_all', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ platform: p, month: month, include_old: true })
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+        showToast(`Successfully cleared all ${month.toUpperCase()} files across all platforms!`, 'success');
+        await loadTaxReports(false);
+        return;
+    }
 
     const pData = taxAllData?.platforms?.[platform];
     const mData = pData?.months?.[month];
@@ -2803,12 +3209,40 @@ async function syncAllLocalFilesToDrive() {
 // -------------------------------------------------------------------------
 
 let isBatchSyncRunning = false;
-let shouldCancelBatchSync = false;
+let syncPollingTimer = null;
 
-function cancelBatchSync() {
-    shouldCancelBatchSync = true;
+function closeTaxSyncModalKeepRunning() {
+    const modal = document.getElementById('taxSyncProgressModal');
+    if (modal) modal.classList.add('hidden');
+    
+    // If sync is actively running, show the floating background pill
+    if (isBatchSyncRunning) {
+        const pill = document.getElementById('taxSyncFloatingPill');
+        if (pill) pill.classList.remove('hidden');
+        showToast('Google Drive sync is continuing in the background...', 'info', 3000);
+    }
+}
+
+function openTaxSyncProgressModal() {
+    const modal = document.getElementById('taxSyncProgressModal');
+    const pill = document.getElementById('taxSyncFloatingPill');
+    if (pill) pill.classList.add('hidden');
+    if (modal) modal.classList.remove('hidden');
+}
+
+async function cancelBatchSync() {
     const stepEl = document.getElementById('taxSyncProgressStep');
-    if (stepEl) stepEl.textContent = 'Cancelling sync...';
+    if (stepEl) stepEl.textContent = 'Cancelling sync on server...';
+    const pillText = document.getElementById('taxSyncFloatingText');
+    if (pillText) pillText.textContent = 'Cancelling...';
+
+    try {
+        const res = await fetch('/api/tax/cancel_sync', { method: 'POST' });
+        const data = await res.json();
+        showToast('Sync cancelled.', 'info');
+    } catch (e) {
+        console.error('Error cancelling sync:', e);
+    }
 }
 
 async function syncSingleFileRow(platform, month, filename, btn) {
@@ -2852,94 +3286,108 @@ async function syncSingleFileRow(platform, month, filename, btn) {
     }
 }
 
+async function checkAndPollSyncStatus() {
+    try {
+        const res = await fetch('/api/tax/sync_status');
+        const st = await res.json();
+
+        const modal = document.getElementById('taxSyncProgressModal');
+        const pill = document.getElementById('taxSyncFloatingPill');
+        const bar = document.getElementById('taxSyncProgressBar');
+        const percentEl = document.getElementById('taxSyncProgressPercent');
+        const countEl = document.getElementById('taxSyncProgressCount');
+        const stepEl = document.getElementById('taxSyncProgressStep');
+        const fnEl = document.getElementById('taxSyncCurrentFilename');
+        const pillPercent = document.getElementById('taxSyncFloatingPercent');
+        const pillBar = document.getElementById('taxSyncFloatingBar');
+        const pillText = document.getElementById('taxSyncFloatingText');
+
+        if (st.is_running) {
+            isBatchSyncRunning = true;
+
+            // If neither modal nor pill is visible, show the floating pill by default on page load / refresh
+            const isModalOpen = modal && !modal.classList.contains('hidden');
+            if (!isModalOpen && pill) {
+                pill.classList.remove('hidden');
+            }
+
+            const pct = Math.max(0, Math.min(100, st.percent || 0));
+            if (bar) bar.style.width = `${pct}%`;
+            if (percentEl) percentEl.textContent = `${pct}%`;
+            if (countEl) countEl.textContent = `${st.current_index || 0} / ${st.total || 0}`;
+            if (stepEl) stepEl.textContent = st.status_text || `Syncing file ${st.current_index || 0} of ${st.total || 0}...`;
+            if (fnEl) fnEl.textContent = `[${st.current_platform || ''}] ${st.current_file || ''}`;
+
+            if (pillPercent) pillPercent.textContent = `${pct}%`;
+            if (pillBar) pillBar.style.width = `${pct}%`;
+            if (pillText) pillText.textContent = `${st.current_index || 0} / ${st.total || 0} • [${st.current_platform || ''}] ${st.current_file || ''}`;
+
+            // Continue polling every 1.5 seconds
+            if (syncPollingTimer) clearTimeout(syncPollingTimer);
+            syncPollingTimer = setTimeout(checkAndPollSyncStatus, 1500);
+        } else {
+            // Was running previously and just completed or stopped
+            if (isBatchSyncRunning) {
+                isBatchSyncRunning = false;
+                if (bar) bar.style.width = '100%';
+                if (percentEl) percentEl.textContent = '100%';
+                if (stepEl) stepEl.textContent = st.status_text || 'Sync completed!';
+
+                setTimeout(() => {
+                    if (modal) modal.classList.add('hidden');
+                    if (pill) pill.classList.add('hidden');
+                    if ((st.completed || 0) > 0) {
+                        showToast(`✅ Successfully synced ${st.completed} file(s) to Google Drive!`, 'success', 6000);
+                    }
+                    loadTaxReports(false);
+                }, 1000);
+            } else {
+                if (modal) modal.classList.add('hidden');
+                if (pill) pill.classList.add('hidden');
+            }
+        }
+    } catch (e) {
+        console.error('Error polling sync status:', e);
+        if (syncPollingTimer) clearTimeout(syncPollingTimer);
+        syncPollingTimer = setTimeout(checkAndPollSyncStatus, 3000);
+    }
+}
+
 async function startBatchSyncToDrive() {
-    if (isBatchSyncRunning) return;
+    if (isBatchSyncRunning) {
+        // Already running on server! Re-open progress modal
+        openTaxSyncProgressModal();
+        return;
+    }
 
     const platform = taxActivePlatform;
     const month = taxActiveMonth;
     if (!platform || !month) return;
 
-    const monthData = taxAllData.platforms?.[platform]?.months?.[month] || { files: [] };
-    const allFiles = monthData.files || [];
-    const pendingFiles = allFiles.filter(f => !f.is_synced);
-
-    if (allFiles.length === 0) {
-        showToast(`No files in ${month.toUpperCase()} (${platform}) to sync.`, 'info');
-        return;
-    }
-
-    const filesToSync = pendingFiles.length > 0 ? pendingFiles : allFiles;
-
-    // Open progress modal
-    const modal = document.getElementById('taxSyncProgressModal');
-    const bar = document.getElementById('taxSyncProgressBar');
-    const percentEl = document.getElementById('taxSyncProgressPercent');
-    const countEl = document.getElementById('taxSyncProgressCount');
+    // Open progress modal immediately
+    openTaxSyncProgressModal();
     const stepEl = document.getElementById('taxSyncProgressStep');
-    const fnEl = document.getElementById('taxSyncCurrentFilename');
-    const cancelBtn = document.getElementById('taxSyncCancelBtn');
+    if (stepEl) stepEl.textContent = 'Starting server sync...';
 
-    if (modal) modal.classList.remove('hidden');
-    isBatchSyncRunning = true;
-    shouldCancelBatchSync = false;
-    if (cancelBtn) cancelBtn.disabled = false;
+    try {
+        const res = await fetch('/api/tax/start_sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ platform, month })
+        });
+        const data = await res.json();
 
-    const total = filesToSync.length;
-    let completed = 0;
-    let failed = 0;
-
-    for (let i = 0; i < total; i++) {
-        if (shouldCancelBatchSync) {
-            showToast('Drive sync cancelled by user.', 'info');
-            break;
+        if (data.success) {
+            isBatchSyncRunning = true;
+            showToast(data.message || 'Background sync started!', 'info', 4000);
+            checkAndPollSyncStatus();
+        } else {
+            closeTaxSyncModalKeepRunning();
+            showToast(data.error || 'Failed to start sync', 'error');
         }
-
-        const fileObj = filesToSync[i];
-        const percent = Math.round(((i) / total) * 100);
-
-        if (bar) bar.style.width = `${percent}%`;
-        if (percentEl) percentEl.textContent = `${percent}%`;
-        if (countEl) countEl.textContent = `${i + 1} / ${total}`;
-        if (stepEl) stepEl.textContent = `Syncing file ${i + 1} of ${total}...`;
-        if (fnEl) fnEl.textContent = fileObj.filename;
-
-        try {
-            const res = await fetch('/api/tax/sync_file', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    platform: platform,
-                    month: month,
-                    filename: fileObj.filename,
-                    is_old: false
-                })
-            });
-            const result = await res.json();
-            if (result.success) {
-                completed++;
-                fileObj.is_synced = true;
-                fileObj.synced_at = new Date().toLocaleTimeString();
-                // Dynamically update this row in UI without full reload
-                renderTaxFilesTable();
-            } else {
-                failed++;
-                console.error(`Failed to sync ${fileObj.filename}:`, result.error);
-            }
-        } catch (err) {
-            failed++;
-            console.error(`Error syncing ${fileObj.filename}:`, err);
-        }
+    } catch (e) {
+        console.error('Error starting sync:', e);
+        closeTaxSyncModalKeepRunning();
+        showToast('Network error starting sync', 'error');
     }
-
-    // Final 100% update
-    if (bar) bar.style.width = '100%';
-    if (percentEl) percentEl.textContent = '100%';
-    if (stepEl) stepEl.textContent = failed > 0 ? `Completed with ${failed} error(s)` : 'All files synced!';
-
-    setTimeout(() => {
-        if (modal) modal.classList.add('hidden');
-        isBatchSyncRunning = false;
-        showToast(`✅ Successfully synced ${completed} file(s) to Google Drive!`, 'success');
-        loadTaxReports(false);
-    }, 800);
 }

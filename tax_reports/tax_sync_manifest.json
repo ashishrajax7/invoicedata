@@ -1,32 +1,668 @@
 {
-  "AJIO/aug/TaxReportData6aa3a5b44d504AJ2A.csv": {
+  "AJIO/oct/TaxReportData6af2dc2ee1f101A.csv": {
     "synced": true,
-    "synced_at": "2026-09-13 15:49:41",
-    "drive_file_id": "1Isd6bQrgVMhkXo_s9jO4t-OFXPWecPNN",
-    "party_code": "AJ2"
+    "synced_at": "2026-11-10 20:57:59",
+    "drive_file_id": "1QnLPhXlLwGI2Lr3qEWCl07mHxAAXdFpF",
+    "party_code": "101"
   },
-  "FLIPKART/aug/TaxReportData6aa2ab17d5b81AJ22F.csv": {
+  "AJIO/oct/TaxReportData6af2dc11ec711171A.csv": {
     "synced": true,
-    "synced_at": "2026-09-13 15:51:40",
-    "drive_file_id": "1cHO3I0gvrb_yZANhJlzIrWqZMe4KrK9f",
-    "party_code": "AJ22"
+    "synced_at": "2026-11-10 20:57:13",
+    "drive_file_id": "1pyHpPauRq2Q4XCoul6QYShmmgic6eJEr",
+    "party_code": "171"
   },
-  "MYNTRA/aug/TaxReportData6a96a1b92f11jMY2M.csv": {
+  "AJIO/oct/TaxReportData6af2dc14e2ad6172A.csv": {
     "synced": true,
-    "synced_at": "2026-09-13 15:51:18",
-    "drive_file_id": "1mIGRS2CXK0dyAE3GH9ZlCRfcE6BRxuZL",
-    "party_code": "MY2"
+    "synced_at": "2026-11-10 20:57:20",
+    "drive_file_id": "17STJV7DjM4_eipUgFn8thBJY7DOfrmAY",
+    "party_code": "172"
   },
-  "MYNTRA/aug/TaxReportData6a9658ce11540509M.csv": {
+  "AJIO/oct/TaxReportData6af2dc189d182A.csv": {
     "synced": true,
-    "synced_at": "2026-09-13 15:51:08",
-    "drive_file_id": "17NF2oyVnfPZ_af3ahCLnTIASPRjk183L",
+    "synced_at": "2026-11-10 20:57:31",
+    "drive_file_id": "1mczy6BU9_Hn4DKMtZUxTP9yxB_zYW_3H",
+    "party_code": "182"
+  },
+  "AJIO/oct/TaxReportData6af2dca3c13e5196A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 20:58:12",
+    "drive_file_id": "1nDSW5WsZUyIDDhGjq1LbtmurcFxZtxGb",
+    "party_code": "196"
+  },
+  "AJIO/oct/TaxReportData6af2dcc0a86be202A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 20:58:18",
+    "drive_file_id": "1yPaWL53aFFBphdJ43HOJPFHsNr6pJ4mS",
+    "party_code": "202"
+  },
+  "AJIO/oct/TaxReportData6af2dcfad7b201A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 20:58:51",
+    "drive_file_id": "1HK73kv4NdP8iwgiELX-iMCJjHtTFbnTa",
+    "party_code": "201"
+  },
+  "AJIO/oct/TaxReportData6af2dcffc8d87225A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 20:59:00",
+    "drive_file_id": "1N0U2b-EP1rPuvQN9vTd0Glsy9gwBO10N",
+    "party_code": "225"
+  },
+  "AJIO/oct/TaxReportData6af2dd3cc3454245A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 20:59:54",
+    "drive_file_id": "1G8LCDGZj30Hi9lWPabnvAvauxbbyHXeW",
+    "party_code": "245"
+  },
+  "AJIO/oct/TaxReportData6af2dd8d2c09cNODATAA.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:00:42",
+    "drive_file_id": "1fqyb2depYaotqRkiql-n2YU98u6Nhbgl",
+    "party_code": "NO DATA"
+  },
+  "AJIO/oct/TaxReportData6af2dd39c3421237A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 20:59:47",
+    "drive_file_id": "1XbAg4wz0V3lFtDGAfA00QZKNOJUbwcGE",
+    "party_code": "237"
+  },
+  "AJIO/oct/TaxReportData6af2dd099e228A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 20:59:10",
+    "drive_file_id": "1R7CG1JrRcm-pE-i8Z4KB1EpmBGy865aC",
+    "party_code": "228"
+  },
+  "AJIO/oct/TaxReportData6af2dd411d6c7249A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:00:20",
+    "drive_file_id": "1JLB0CfplcZm7aSA0d92szEqbtnOeYdkR",
+    "party_code": "249"
+  },
+  "AJIO/oct/TaxReportData6af2dd7789dcd150A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:00:36",
+    "drive_file_id": "14p5nT8Bb2a2zxsZR-93ZTgaov5jS-X-o",
+    "party_code": "150"
+  },
+  "AJIO/oct/TaxReportData6af2ddb2aece2NODATAA.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:01:10",
+    "drive_file_id": "1NH95sO6sTcaWiej-Zm4Fgme7IuIDArgy",
+    "party_code": "NO DATA"
+  },
+  "AJIO/oct/TaxReportData6af2ddb323ff8NODATAA.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:01:15",
+    "drive_file_id": "1QPX7ceh7FUYFvjQOlF94nBomY8C0uf79",
+    "party_code": "NO DATA"
+  },
+  "AJIO/oct/TaxReportData6af2ddf4c7b28288A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:02:06",
+    "drive_file_id": "1etwGO13XFvtxFQlFz376DLPspvZ2zKfl",
+    "party_code": "288"
+  },
+  "AJIO/oct/TaxReportData6af2de2b7eebf303A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:02:19",
+    "drive_file_id": "1CaTFrcdqXcC5uQ_zR4QSfPrN0B0yJNFr",
+    "party_code": "303"
+  },
+  "AJIO/oct/TaxReportData6af2dc170a2b2181A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 20:57:27",
+    "drive_file_id": "1Qm3jGqp13sMce4glqtJTZH1qlTbI4rDU",
+    "party_code": "181"
+  },
+  "AJIO/oct/TaxReportData6af2dc86177c4188A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 20:58:05",
+    "drive_file_id": "1puIdpefTPAiV63X192YAEkTFRq8c9WRa",
+    "party_code": "188"
+  },
+  "AJIO/oct/TaxReportData6af2dcc476798206A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 20:58:23",
+    "drive_file_id": "18-R7hkyjAO22yQNquj4rUvzjiGe-cfqZ",
+    "party_code": "206"
+  },
+  "AJIO/oct/TaxReportData6af2dcd7c73abNODATAA.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 20:58:36",
+    "drive_file_id": "1IsIGXl2yngUASPLH8AqC1lnQcomwlTNp",
+    "party_code": "NO DATA"
+  },
+  "AJIO/oct/TaxReportData6af2dcd181d16221A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 20:58:30",
+    "drive_file_id": "1d68rE9bv7Cr_nQeoPBOfx_4NwZbl-yCR",
+    "party_code": "221"
+  },
+  "AJIO/oct/TaxReportData6af2dcf5626c2198A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 20:58:45",
+    "drive_file_id": "1AgWuZggIjMvnsSArun_xQCVI3SBfJR2r",
+    "party_code": "198"
+  },
+  "AJIO/oct/TaxReportData6af2dd1b0c074233A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 20:59:25",
+    "drive_file_id": "18EKvHk4h3XsssQsUnGed7paASYzdUmk8",
+    "party_code": "233"
+  },
+  "AJIO/oct/TaxReportData6af2dd1dbd513235A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 20:59:31",
+    "drive_file_id": "10LKnBcQzF0fBd0BXMOOhgL8DQxLc2-IQ",
+    "party_code": "235"
+  },
+  "AJIO/oct/TaxReportData6af2dd3e6c11c248A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:00:12",
+    "drive_file_id": "1mcp2bgk6p-OKjEX7fxbAXOwAIlTfzuxT",
+    "party_code": "248"
+  },
+  "AJIO/oct/TaxReportData6af2dd5f567b1127A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:00:28",
+    "drive_file_id": "1NlPV1CVL16zu04Xw2Gl7gbLepuPtnih6",
+    "party_code": "127"
+  },
+  "AJIO/oct/TaxReportData6af2dd90aa261A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:00:50",
+    "drive_file_id": "1RzK_AMlYrIIqItlQuq9h4GnQ8yuDOn25",
+    "party_code": "261"
+  },
+  "AJIO/oct/TaxReportData6af2dd1815c1c230A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 20:59:18",
+    "drive_file_id": "1llaCCRiUHCicHfQQDdETQe9cr8zUZSBN",
+    "party_code": "230"
+  },
+  "AJIO/oct/TaxReportData6af2dd9843e34262A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:00:57",
+    "drive_file_id": "13OHc8cDfdrWl_8tUJRD4RjmPLV_GZ6at",
+    "party_code": "262"
+  },
+  "AJIO/oct/TaxReportData6af2ddb0b292bNODATAA.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:01:04",
+    "drive_file_id": "1toJPsUiLWgJncleMy9N2myavTqi3PRPN",
+    "party_code": "NO DATA"
+  },
+  "AJIO/oct/TaxReportData6af2ddb4b1476NODATAA.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:01:27",
+    "drive_file_id": "1O3G9Q_OxV2qbPVrdnEkvcP9UuIuIm696",
+    "party_code": "NO DATA"
+  },
+  "AJIO/oct/TaxReportData6af2ddb38a288NODATAA.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:24:17",
+    "drive_file_id": "1ZPnf5M5YY-HpY3jTTZ_hGGc7v0DzOC6d",
+    "party_code": "NO DATA"
+  },
+  "AJIO/oct/TaxReportData6af2ddcde68e5157A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:01:37",
+    "drive_file_id": "1St8L6rywnQKH6qucFOpml_H4IsUJ4Hu1",
+    "party_code": "157"
+  },
+  "AJIO/oct/TaxReportData6af2ddecb7ccc275A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:01:45",
+    "drive_file_id": "1Sskz8PES7lwF1X0y5Oc7Gj_TwVVGUiXj",
+    "party_code": "275"
+  },
+  "AJIO/oct/TaxReportData6af2ddeda52df281A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:01:51",
+    "drive_file_id": "1hQ-h5sjOGSOSPH9yBbD3O7JvsSJAsIxW",
+    "party_code": "281"
+  },
+  "AJIO/oct/TaxReportData6af2ddf229074285A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:01:58",
+    "drive_file_id": "1AxKrV-1EOA0tFFDY25_CZBGqIHnykE4k",
+    "party_code": "285"
+  },
+  "AJIO/oct/TaxReportData6af2de2c28c0d304A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:02:26",
+    "drive_file_id": "1ROGavgBW9yKDM2l31MF1keurlONoyF8s",
+    "party_code": "304"
+  },
+  "AJIO/oct/TaxReportData6af2de9a6b9d4509A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:02:43",
+    "drive_file_id": "1Jk1WR0-TnKdYUHO92njboLNgyoZBN-9j",
     "party_code": "509"
   },
-  "MYNTRA/aug/TaxReportData6a96a365d7279271M.csv": {
+  "AJIO/oct/TaxReportData6af2de9b5553dAJ2A.csv": {
     "synced": true,
-    "synced_at": "2026-09-13 15:51:25",
-    "drive_file_id": "1Zsf0dL88Ymrah7hKc92zLy-1KJg5ztrb",
+    "synced_at": "2026-11-10 21:02:49",
+    "drive_file_id": "158SOnljHGMGupLkKv3oWPopYUf74TyWd",
+    "party_code": "AJ2"
+  },
+  "AJIO/oct/TaxReportData6af2de9bbe3d8AJ22A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:02:56",
+    "drive_file_id": "1uTPKdgYkLi0BppbMm5WMtFkbNoNjpDHY",
+    "party_code": "AJ22"
+  },
+  "AJIO/oct/TaxReportData6af2de9c54c44258A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:03:03",
+    "drive_file_id": "1YABiMAwBo2_zM4gFkUrzWEO0pLJE5-Pt",
+    "party_code": "258"
+  },
+  "AJIO/oct/TaxReportData6af2de29a9053295A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:02:12",
+    "drive_file_id": "10K00rDvCARFyCjczokZMlbVkh6QlLShL",
+    "party_code": "295"
+  },
+  "AJIO/oct/TaxReportData6af2de3720dbc311A.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:02:35",
+    "drive_file_id": "1AToC_TCq7qIkTD5qq7U29g9RWMPbtARq",
+    "party_code": "311"
+  },
+  "MYNTRA/oct/TaxReportData6af302c330fb0NODATAM.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:03:44",
+    "drive_file_id": "144gupPxak1DR_AXReU5Q0sEnD-m9meJ1",
+    "party_code": "NO DATA"
+  },
+  "MYNTRA/oct/TaxReportData6af302fd8f775139M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:04:00",
+    "drive_file_id": "1Lgz-LsevGOqnsDqE8LHNmXEkSq8NZFTB",
+    "party_code": "139"
+  },
+  "MYNTRA/oct/TaxReportData6af303f31a6d7189M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:30:13",
+    "drive_file_id": "1lDqrZuDA1MlzZZooxrTv2IqXymbILn4Q",
+    "party_code": "189"
+  },
+  "MYNTRA/oct/TaxReportData6af304aa5761cNODATAM.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:05:30",
+    "drive_file_id": "14n0X6AWVktmusu4gjbNMffIGvW_mP7IK",
+    "party_code": "NO DATA"
+  },
+  "MYNTRA/oct/TaxReportData6af304be739b3228M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:05:39",
+    "drive_file_id": "1sv8vdtHpUfOx2mhpwc-bg_owDpfmrOl-",
+    "party_code": "228"
+  },
+  "MYNTRA/oct/TaxReportData6af304bf2aefa128M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:05:47",
+    "drive_file_id": "1fbS2PlDE05eCEsPSfQnW0kSCjob5kCeT",
+    "party_code": "128"
+  },
+  "MYNTRA/oct/TaxReportData6af304dad046c235M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:05:54",
+    "drive_file_id": "1osQb6DCVXgLl_0r77F7ZohmfJiFFmqeW",
+    "party_code": "235"
+  },
+  "MYNTRA/oct/TaxReportData6af304e378981245M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:06:10",
+    "drive_file_id": "1-a2lvMrnaYdKg0Rm3DGZjXzD-K3-XR59",
+    "party_code": "245"
+  },
+  "MYNTRA/oct/TaxReportData6af304eb721c7150M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:06:20",
+    "drive_file_id": "1U9c7re50bTJK3Br-fRr7sC7A7S0jOc-_",
+    "party_code": "150"
+  },
+  "MYNTRA/oct/TaxReportData6af304ed3b4ab233M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:06:26",
+    "drive_file_id": "1gC35Cv3RQBbnkGTYBQ-ABh3-yMGCHlRj",
+    "party_code": "233"
+  },
+  "MYNTRA/oct/TaxReportData6af304f0f0fce247M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:06:34",
+    "drive_file_id": "1mlfi6RkWIvJP4c9HYNB2i_7_WsF_qS0_",
+    "party_code": "247"
+  },
+  "MYNTRA/oct/TaxReportData6af304f31066d248M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:30:32",
+    "drive_file_id": "1Dl9VIs-ntjSIXPZRE_A25ZJHfECfWfDm",
+    "party_code": "248"
+  },
+  "MYNTRA/oct/TaxReportData6af305a637b286M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:07:53",
+    "drive_file_id": "18HH9Vx7atdTgq0rLUHZ4m4ausGnq6g7i",
+    "party_code": "286"
+  },
+  "MYNTRA/oct/TaxReportData6af305acecc8b288M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:07:59",
+    "drive_file_id": "1Sz2SmaDtF0AL9zcKMZASlNtUPG4jbb1O",
+    "party_code": "288"
+  },
+  "MYNTRA/oct/TaxReportData6af305baef3ab291M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:08:08",
+    "drive_file_id": "1eyMuA9mFZJhXC8cPc6UKd0LY_ZqSTb9s",
+    "party_code": "291"
+  },
+  "MYNTRA/oct/TaxReportData6af305c6ca0a7336M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:08:40",
+    "drive_file_id": "1aYMhtDhU80VADvXD5MPvd2B0bA0vAl8L",
+    "party_code": "336"
+  },
+  "MYNTRA/oct/TaxReportData6af305c7d70c5344M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:08:46",
+    "drive_file_id": "1W-8NviBcJ5uHfXyx-XnQpEhUwSiCrzl1",
+    "party_code": "344"
+  },
+  "MYNTRA/oct/TaxReportData6af305c630cec303M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:08:33",
+    "drive_file_id": "1W-CXfLVJlL7eAVOJ4WJsW32qjs5mAsJ0",
+    "party_code": "303"
+  },
+  "MYNTRA/oct/TaxReportData6af305c5648c5325M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:08:22",
+    "drive_file_id": "1s3M1oHYwZiIvADIvHnbiNvc1asw0oxiP",
+    "party_code": "325"
+  },
+  "MYNTRA/oct/TaxReportData6af305c294713297M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:08:14",
+    "drive_file_id": "1bUz_YhwC-XnAVpB3VB8hCY3YSMrx6Tb1",
+    "party_code": "297"
+  },
+  "MYNTRA/oct/TaxReportData6af305d16fe75NODATAM.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:08:51",
+    "drive_file_id": "1ixrCN0Z6ieLX5ndJ4xM-0XbVEFZ9KKF4",
+    "party_code": "NO DATA"
+  },
+  "MYNTRA/oct/TaxReportData6af305f4824e9178M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:09:17",
+    "drive_file_id": "1iAVeXhG03mW8kc5LGnoQNSTNekIQKIj2",
+    "party_code": "178"
+  },
+  "MYNTRA/oct/TaxReportData6af305f413800509M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:09:04",
+    "drive_file_id": "1Vu5tIpIwxdRB8QvgD-Rle7zguOh21C1q",
+    "party_code": "509"
+  },
+  "MYNTRA/oct/TaxReportData6af3011f7a6df117M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:03:11",
+    "drive_file_id": "1FuRH9Qq593s5ppKUkf0gYHVR8-A68hkr",
+    "party_code": "117"
+  },
+  "MYNTRA/oct/TaxReportData6af3042ca1ced217M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:04:51",
+    "drive_file_id": "1GyeB3UkFg2OcIEfeUKEfT3ixPIiza2nG",
+    "party_code": "217"
+  },
+  "MYNTRA/oct/TaxReportData6af3049c9ef0d190M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:05:17",
+    "drive_file_id": "1pi_gjt7TPu1OEWdY8Ja-FA4HgE4zaezi",
+    "party_code": "190"
+  },
+  "MYNTRA/oct/TaxReportData6af3049f5c418225M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:05:24",
+    "drive_file_id": "1IcQu7FgkdK-cHZm6c5pk7Z3_NPHgazk8",
+    "party_code": "225"
+  },
+  "MYNTRA/oct/TaxReportData6af3050cd2b1d258M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:06:45",
+    "drive_file_id": "1J-c8xe_tEveNVcMU1fdHrOi0ebv29FNW",
+    "party_code": "258"
+  },
+  "MYNTRA/oct/TaxReportData6af3051f3c411198M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:07:06",
+    "drive_file_id": "1NiJ2ZbxMTPb_u_uQ0AW1gPvaur1-firx",
+    "party_code": "198"
+  },
+  "MYNTRA/oct/TaxReportData6af3052d0e909274M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:07:26",
+    "drive_file_id": "1n79jMF2LDNGEmGg_XbuUctO6UdvghEDL",
+    "party_code": "274"
+  },
+  "MYNTRA/oct/TaxReportData6af3052f2bb6d281M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:07:31",
+    "drive_file_id": "1VRElkxY7dgWn_NozO054m7vJdFR_5bAx",
+    "party_code": "281"
+  },
+  "MYNTRA/oct/TaxReportData6af3064fdcb35157M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:09:58",
+    "drive_file_id": "1FoSCUp-bREME6MsLlOlULK_cjR4FX4FS",
+    "party_code": "157"
+  },
+  "MYNTRA/oct/TaxReportData6af30279ee927101M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:24:58",
+    "drive_file_id": "1K41qGAIpW6wif7MoK4eJCA82m9rs4GTG",
+    "party_code": "101"
+  },
+  "MYNTRA/oct/TaxReportData6af30317c4e149M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:30:13",
+    "drive_file_id": "1Ktol67K4xa45wY6NJFgsThXXwYE84FyN",
+    "party_code": "149"
+  },
+  "MYNTRA/oct/TaxReportData6af30428a9453206M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:04:41",
+    "drive_file_id": "1GCRYSXd5fkj2GiX8nubBZ1PvjcWnJLbf",
+    "party_code": "206"
+  },
+  "MYNTRA/oct/TaxReportData6af30439c2910223M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:30:12",
+    "drive_file_id": "1wSub2eIe9xAWPdxj7jD8WGe5lulkv_QF",
+    "party_code": "223"
+  },
+  "MYNTRA/oct/TaxReportData6af30515d5b7c264M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:06:50",
+    "drive_file_id": "1HOtIQV5mSsCJpP1PNl_dlj_N7bp9SE6j",
+    "party_code": "264"
+  },
+  "MYNTRA/oct/TaxReportData6af30529ace76271M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:07:21",
+    "drive_file_id": "1EwDD3vPZ1j43yJkwIpGEJJlT7mYlwPBs",
     "party_code": "271"
+  },
+  "MYNTRA/oct/TaxReportData6af306041bMY2M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:09:33",
+    "drive_file_id": "1G2rGllPrki3f94iChSTQYeoBbcgsHOHH",
+    "party_code": "MY2"
+  },
+  "MYNTRA/oct/TaxReportData6af3055599ae8200M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:07:42",
+    "drive_file_id": "11kA-6QGLEnRBufxO0S08gewTaxzk_ate",
+    "party_code": "200"
+  },
+  "MYNTRA/oct/TaxReportData6af3065628d63163M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:10:07",
+    "drive_file_id": "1KQk6DQklyNvklXIB5OoaWnrF0Hpn7qMB",
+    "party_code": "163"
+  },
+  "MYNTRA/oct/TaxReportData6af30425427fa203M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:04:33",
+    "drive_file_id": "12m55d4781x4BwjZP_qsvWzH6xwfM3_4v",
+    "party_code": "203"
+  },
+  "MYNTRA/oct/TaxReportData6af30436985fb221M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:04:59",
+    "drive_file_id": "1fqTkwFdbkKBiCy7vk-Su9K_BVEy9U6Po",
+    "party_code": "221"
+  },
+  "FLIPKART/oct/TaxReportData6af321c7b4fe8128F.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:10:26",
+    "drive_file_id": "1zip2svJp6Vz2jGyzW91Mr-MHL9r48ueP",
+    "party_code": "128"
+  },
+  "FLIPKART/oct/TaxReportData6af322a24f025344F.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:11:14",
+    "drive_file_id": "1xV1x7_8sF_zH8OYXa9QheTD6GyA05sRB",
+    "party_code": "344"
+  },
+  "FLIPKART/oct/TaxReportData6af322a503a45245F.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:11:25",
+    "drive_file_id": "1CKR_ob2Jf-odTees0Rl8s9nT1IrG4G7n",
+    "party_code": "245"
+  },
+  "MYNTRA/oct/TaxReportData6af30523532b9265M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:07:13",
+    "drive_file_id": "1Bcb9JoPfVuLg1fEVPKUIeROxwIwwji2z",
+    "party_code": "265"
+  },
+  "FLIPKART/oct/TaxReportData6af322a322097351F.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:11:19",
+    "drive_file_id": "1_wCrgZbs1fj54Qo9x2-vFui1gTr-IaBO",
+    "party_code": "351"
+  },
+  "FLIPKART/oct/TaxReportData6af322a556558150F.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:11:31",
+    "drive_file_id": "1_f1Qb2xihwmVtPLpCM3p8iLfO49gLX0q",
+    "party_code": "150"
+  },
+  "MYNTRA/oct/TaxReportData6af30559392d1NODATAM.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:07:47",
+    "drive_file_id": "1eK50ywP1ATRICaOlEXcFavZn6uDQRht8",
+    "party_code": "NO DATA"
+  },
+  "FLIPKART/oct/TaxReportData6af322ad76eac247F.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:11:36",
+    "drive_file_id": "1PlCGVKYs5bHqx3GO_0KXqOh4LrRoyeRI",
+    "party_code": "247"
+  },
+  "MYNTRA/oct/TaxReportData6af3060323763106M.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:09:28",
+    "drive_file_id": "1hQMkae9iKK0sgUReV2yVdO0_2hNbiJji",
+    "party_code": "106"
+  },
+  "FLIPKART/oct/TaxReportData6af322b618d66178F.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:11:44",
+    "drive_file_id": "1VZbg84_eJj5a412vOq93WXkd6L5V_7yw",
+    "party_code": "178"
+  },
+  "FLIPKART/oct/TaxReportData6af322b8276e3182F.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:11:50",
+    "drive_file_id": "1VSa_Vduh1SAAYWUHyE-Oluvhf_Lk8rie",
+    "party_code": "182"
+  },
+  "FLIPKART/oct/TaxReportData6af322d1053a4189F.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:11:54",
+    "drive_file_id": "1QgIagiUtq7Irne5teWR1ka2T1zhh1K2z",
+    "party_code": "189"
+  },
+  "FLIPKART/oct/TaxReportData6af322e1aa190F.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:11:59",
+    "drive_file_id": "1mmIpQRlq5xEkDgxS1Tlkvd4K8WadD36H",
+    "party_code": "190"
+  },
+  "FLIPKART/oct/TaxReportData6af3222d08076157F.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:10:32",
+    "drive_file_id": "1a19XyKJokctWpzI12d6M_9wSUNu5z7Wt",
+    "party_code": "157"
+  },
+  "FLIPKART/oct/TaxReportData6af3223e3a9a2139F.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:10:39",
+    "drive_file_id": "1whLkzszoSVH-GXh2Mhhby8RHdy7mqsNf",
+    "party_code": "139"
+  },
+  "FLIPKART/oct/TaxReportData6af3229b9b184288F.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:10:59",
+    "drive_file_id": "1pmztnIfPwG2qXn8Tfd3XIOsCRc4xkthN",
+    "party_code": "288"
+  },
+  "FLIPKART/oct/TaxReportData6af3229d70fb0290F.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:11:04",
+    "drive_file_id": "1eMSC-U4Jc4Y7CJbAIe6cb_OzVMgyUqml",
+    "party_code": "290"
+  },
+  "FLIPKART/oct/TaxReportData6af3229fb7b09225F.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:11:09",
+    "drive_file_id": "15XgpiTU_80p8n6eE8CNjb0lS-jausQYK",
+    "party_code": "225"
+  },
+  "FLIPKART/oct/TaxReportData6af3230c803e3509F.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:12:11",
+    "drive_file_id": "1fv9pz1IWC8PIzknJFPJViAll5Yvno3Ye",
+    "party_code": "509"
+  },
+  "FLIPKART/oct/TaxReportData6af32097c1df9101F.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:10:18",
+    "drive_file_id": "1FoT3phP2txSkPRvotdrS43RuTeOW28cj",
+    "party_code": "101"
+  },
+  "FLIPKART/oct/TaxReportData6af32276e1e87149F.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:10:44",
+    "drive_file_id": "1lUPSg1rOc0QUKHjchiPivBY6MX4ryPEV",
+    "party_code": "149"
+  },
+  "FLIPKART/oct/TaxReportData6af32294ae7fa200F.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:10:49",
+    "drive_file_id": "1fXaiYUvsCynKJT2rPWVNPBvXmgljbmxw",
+    "party_code": "200"
+  },
+  "FLIPKART/oct/TaxReportData6af3229898855NODATAF.csv": {
+    "synced": true,
+    "synced_at": "2026-11-10 21:10:55",
+    "drive_file_id": "1vsIVHw9CpzgAUnfAeNs5RXrgXVe9b9FJ",
+    "party_code": "NO DATA"
   }
 }

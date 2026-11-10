@@ -11,7 +11,7 @@ from urllib.parse import quote
 ZIP_STORAGE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'zip_storage')
 REGISTRY_FILE = os.path.join(ZIP_STORAGE_DIR, 'registry.json')
 VALID_PLATFORMS = ['AJIO', 'MYNTRA', 'FLIPKART']
-ZIP_EXPIRY_HOURS = float(os.environ.get('ZIP_EXPIRY_HOURS', 5.0))
+ZIP_EXPIRY_HOURS = float(os.environ.get('ZIP_EXPIRY_HOURS', 9.0))
 _last_cleanup_timestamp = 0.0
 
 def normalize_platform(platform):
@@ -191,6 +191,11 @@ def process_order_zip(platform, extract_dir, original_zip_name=''):
         os.makedirs(order_dir, exist_ok=True)
         os.makedirs(two_more_dir, exist_ok=True)
 
+        now = datetime.now()
+        now_iso = now.isoformat()
+        expires_dt = now + timedelta(hours=ZIP_EXPIRY_HOURS)
+        expires_iso = expires_dt.isoformat()
+
         if party_code not in p_data['parties']:
             p_data['parties'][party_code] = {
                 'party_code': party_code,
@@ -203,7 +208,10 @@ def process_order_zip(platform, extract_dir, original_zip_name=''):
                 'two_more_invoice': None,
                 'details_file': None,
                 'summary_file': None,
-                'updated_at': datetime.now().isoformat()
+                'uploaded_at': now_iso,
+                'updated_at': now_iso,
+                'expires_at': expires_iso,
+                'expiry_hours': ZIP_EXPIRY_HOURS
             }
         
         party_entry = p_data['parties'][party_code]
@@ -243,10 +251,19 @@ def process_order_zip(platform, extract_dir, original_zip_name=''):
             }
             two_more_count += 1
 
-        party_entry['updated_at'] = datetime.now().isoformat()
+        party_entry['uploaded_at'] = party_entry.get('uploaded_at') or now_iso
+        party_entry['updated_at'] = now_iso
+        party_entry['expires_at'] = expires_iso
+        party_entry['expiry_hours'] = ZIP_EXPIRY_HOURS
+        try:
+            os.utime(party_storage_dir, None)
+        except Exception:
+            pass
         parties_updated.append(party_code)
 
     p_data['stats']['order_zips'] = p_data['stats'].get('order_zips', 0) + 1
+    p_data['last_uploaded_at'] = datetime.now().isoformat()
+    p_data['expires_at'] = (datetime.now() + timedelta(hours=ZIP_EXPIRY_HOURS)).isoformat()
     save_registry(registry)
     
     file_type_label = 'OD'
@@ -306,6 +323,11 @@ def process_details_or_summary_zip(platform, zip_type, extract_dir, original_zip
             target_dst = os.path.join(target_subfolder, fname)
             shutil.copy2(file_path, target_dst)
             
+            now = datetime.now()
+            now_iso = now.isoformat()
+            expires_dt = now + timedelta(hours=ZIP_EXPIRY_HOURS)
+            expires_iso = expires_dt.isoformat()
+
             if party_code not in p_data['parties']:
                 p_data['parties'][party_code] = {
                     'party_code': party_code,
@@ -315,7 +337,10 @@ def process_details_or_summary_zip(platform, zip_type, extract_dir, original_zip
                     'two_more_invoice': None,
                     'details_file': None,
                     'summary_file': None,
-                    'updated_at': datetime.now().isoformat()
+                    'uploaded_at': now_iso,
+                    'updated_at': now_iso,
+                    'expires_at': expires_iso,
+                    'expiry_hours': ZIP_EXPIRY_HOURS
                 }
             
             party_entry = p_data['parties'][party_code]
@@ -334,13 +359,22 @@ def process_details_or_summary_zip(platform, zip_type, extract_dir, original_zip
             else:
                 party_entry['summary_file'] = file_meta
 
-            party_entry['updated_at'] = datetime.now().isoformat()
+            party_entry['uploaded_at'] = party_entry.get('uploaded_at') or now_iso
+            party_entry['updated_at'] = now_iso
+            party_entry['expires_at'] = expires_iso
+            party_entry['expiry_hours'] = ZIP_EXPIRY_HOURS
+            try:
+                os.utime(party_storage_dir, None)
+            except Exception:
+                pass
             saved_count += 1
             if party_code not in parties_updated:
                 parties_updated.append(party_code)
 
     stat_key = f"{zip_type}_zips"
     p_data['stats'][stat_key] = p_data['stats'].get(stat_key, 0) + 1
+    p_data['last_uploaded_at'] = datetime.now().isoformat()
+    p_data['expires_at'] = (datetime.now() + timedelta(hours=ZIP_EXPIRY_HOURS)).isoformat()
     save_registry(registry)
     
     return {
@@ -489,6 +523,9 @@ def get_party_bundle(platform, party_code):
                 'download_url': f"/api/zip/download/{platform}/{party_code}/summary/{quote(files[0])}"
             }
 
+    result['uploaded_at'] = party_info.get('uploaded_at', '') if party_info else ''
+    result['updated_at'] = party_info.get('updated_at', '') if party_info else ''
+    result['expires_at'] = party_info.get('expires_at', '') if party_info else ''
     result['is_complete'] = bool(result['has_order_file'] and result['has_details'] and result['has_summary'])
     return result
 
@@ -606,7 +643,7 @@ def clear_zip_storage_data(platform=None):
     except Exception as e:
         print(f"Error making backup of zip storage: {e}")
 
-    if platform:
+    if platform and str(platform).strip().upper() != 'ALL':
         p = normalize_platform(platform)
         p_dir = os.path.join(ZIP_STORAGE_DIR, p)
         if os.path.exists(p_dir):
@@ -633,9 +670,9 @@ def clear_zip_storage_data(platform=None):
 
 def clean_expired_zip_data(expiry_hours=None, force=False):
     """
-    Cleans up any party folders and registry entries older than expiry_hours (default 5 hours).
-    Also prunes stale temporary bundle zips and old backups to stay within Render's 512MB limit.
-    Optimized for zero server load with rate-limited check (cooldown of 60 seconds).
+    Cleans up any party folders and registry entries ONLY when full 9 hours have elapsed
+    since upload/update.
+    Protects all data from being deleted on server startup or when waking up from sleep mode.
     """
     global _last_cleanup_timestamp
     now_ts = time.time()
@@ -662,26 +699,47 @@ def clean_expired_zip_data(expiry_hours=None, force=False):
         parties = p_data.get('parties', {})
         parties_to_delete = set()
 
-        # Check registered parties
-        for party_code, pentry in parties.items():
+        for party_code, pentry in list(parties.items()):
             party_dir = os.path.join(ZIP_STORAGE_DIR, platform, party_code)
             is_expired = False
+            has_timestamp = False
             
-            # Check registry updated_at
-            updated_at_str = pentry.get('updated_at')
-            if updated_at_str:
+            # Check explicit expires_at
+            expires_at_str = pentry.get('expires_at')
+            if expires_at_str:
+                has_timestamp = True
                 try:
-                    dt = datetime.fromisoformat(updated_at_str)
-                    if (now_dt - dt).total_seconds() > expiry_seconds:
+                    exp_dt = datetime.fromisoformat(expires_at_str)
+                    if now_dt >= exp_dt:
                         is_expired = True
+                    else:
+                        # NOT EXPIRED: within 9 hours! Keep strictly intact!
+                        is_expired = False
+                        continue
                 except Exception:
                     pass
 
-            # If no valid updated_at or still active, check folder mtime
-            if not is_expired and os.path.exists(party_dir):
+            # Check updated_at or uploaded_at
+            updated_at_str = pentry.get('updated_at') or pentry.get('uploaded_at')
+            if updated_at_str:
+                has_timestamp = True
+                try:
+                    dt = datetime.fromisoformat(updated_at_str)
+                    elapsed_seconds = (now_dt - dt).total_seconds()
+                    if elapsed_seconds >= expiry_seconds:
+                        is_expired = True
+                    else:
+                        # NOT EXPIRED: within 9 hours! Keep strictly intact!
+                        is_expired = False
+                        continue
+                except Exception:
+                    pass
+
+            # Fallback ONLY if no timestamp exists in registry entry
+            if not has_timestamp and os.path.exists(party_dir):
                 try:
                     dir_mtime = os.path.getmtime(party_dir)
-                    if (now_ts - dir_mtime) > expiry_seconds:
+                    if (now_ts - dir_mtime) >= expiry_seconds:
                         is_expired = True
                 except Exception:
                     pass
@@ -689,19 +747,29 @@ def clean_expired_zip_data(expiry_hours=None, force=False):
             if is_expired:
                 parties_to_delete.add(party_code)
 
-        # Also check for orphaned party folders not in registry that are older than expiry
+        # For orphaned folders on disk not present in registry:
         platform_dir = os.path.join(ZIP_STORAGE_DIR, platform)
         if os.path.exists(platform_dir):
             try:
                 for entry_name in os.listdir(platform_dir):
+                    if entry_name in parties:
+                        continue
                     entry_path = os.path.join(platform_dir, entry_name)
                     if os.path.isdir(entry_path):
-                        if (now_ts - os.path.getmtime(entry_path)) > expiry_seconds:
+                        plat_up_str = p_data.get('last_uploaded_at') or p_data.get('expires_at')
+                        if plat_up_str:
+                            try:
+                                dt = datetime.fromisoformat(plat_up_str)
+                                if (now_dt - dt).total_seconds() < expiry_seconds:
+                                    continue
+                            except Exception:
+                                pass
+                        if (now_ts - os.path.getmtime(entry_path)) >= expiry_seconds:
                             parties_to_delete.add(entry_name)
             except Exception:
                 pass
 
-        # Perform deletion
+        # Perform deletion of truly expired parties (> 9 hours)
         for pcode in parties_to_delete:
             party_dir = os.path.join(ZIP_STORAGE_DIR, platform, pcode)
             if os.path.exists(party_dir):

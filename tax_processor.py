@@ -17,6 +17,7 @@ import openpyxl
 import csv
 import base64
 import requests
+import threading
 
 # Optional Google Drive API imports
 try:
@@ -257,10 +258,25 @@ def delete_all_in_gas(gas_url, platform, month, include_old, root_folder_id):
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
+TAX_SYNC_STATE_PATH = os.path.join(TAX_STORAGE_DIR, 'tax_sync_state.json')
+_bg_sync_thread = None
+_bg_sync_lock = threading.Lock()
+
 def init_tax_storage():
     os.makedirs(TAX_STORAGE_DIR, exist_ok=True)
     for p in VALID_PLATFORMS:
         os.makedirs(os.path.join(TAX_STORAGE_DIR, p), exist_ok=True)
+    try:
+        if os.path.exists(TAX_SYNC_STATE_PATH):
+            with open(TAX_SYNC_STATE_PATH, 'r', encoding='utf-8') as f:
+                st = json.load(f)
+            if st.get('is_running'):
+                st['is_running'] = False
+                st['status_text'] = 'Server restarted; sync stopped.'
+                with open(TAX_SYNC_STATE_PATH, 'w', encoding='utf-8') as f:
+                    json.dump(st, f, indent=2)
+    except Exception:
+        pass
 
 init_tax_storage()
 
@@ -568,6 +584,19 @@ def extract_party_code(excel_path, platform):
             except Exception:
                 continue
 
+    # If file has 0 or only 1 row (only headers, no data rows), it has NO DATA
+    if len(rows) <= 1:
+        return 'NO DATA'
+
+    has_data_rows = False
+    for r in rows[1:]:
+        if any(c is not None and str(c).strip() != '' for c in r):
+            has_data_rows = True
+            break
+
+    if not has_data_rows:
+        return 'NO DATA'
+
     # Scan rows
     header_row = None
     g_col_idx = 7  # 1-indexed default (column G)
@@ -629,14 +658,18 @@ def extract_party_code(excel_path, platform):
             party_code = m_generic.group(1).strip()
             break
 
-    # Fallback to filename if not found in cells
-    if not party_code:
+    # Fallback to filename ONLY if a valid short party code prefix is present (e.g. 198-TaxReport...)
+    if not party_code or party_code == 'UNKNOWN':
         fname = os.path.basename(excel_path)
-        m_fn = re.search(r'^(\d+)[-_]', fname) or re.search(r'[-_](\d+)[-_]', fname)
-        if m_fn:
+        m_fn = re.match(r'^([A-Za-z0-9]{1,6})[-_]', fname)
+        if m_fn and not m_fn.group(1).upper().startswith('TAXREPORT'):
             party_code = m_fn.group(1)
         else:
-            party_code = 'UNKNOWN'
+            party_code = 'NO DATA'
+
+    # If code is long random digits (>7 digits like export IDs / timestamps), it's NO DATA
+    if str(party_code).isdigit() and len(str(party_code)) > 7:
+        party_code = 'NO DATA'
 
     return str(party_code).strip()
 
@@ -657,9 +690,12 @@ def build_renamed_filename(original_filename, party_code, platform):
     cleaned_base = re.sub(r'^\d+[\s_-]+', '', base_name)
     
     # Also strip any trailing party suffix if file was already renamed previously
-    cleaned_base = re.sub(r'\d+[AMF]$', '', cleaned_base, flags=re.IGNORECASE)
+    cleaned_base = re.sub(r'(\d+|NODATA|NO_DATA)[AMF]$', '', cleaned_base, flags=re.IGNORECASE)
 
-    renamed = f"{cleaned_base}{party_code}{suffix}{ext}"
+    if party_code == 'NO DATA':
+        renamed = f"{cleaned_base}NODATA{suffix}{ext}"
+    else:
+        renamed = f"{cleaned_base}{party_code}{suffix}{ext}"
     return renamed
 
 # -------------------------------------------------------------------------
@@ -914,7 +950,7 @@ def get_all_tax_data():
                         
                         # Accurately retrieve party code from manifest, or extract from file
                         pcode = s_info.get('party_code')
-                        if not pcode:
+                        if not pcode or pcode in ['UNKNOWN', 'NO DATA', 'NODATA'] or (isinstance(pcode, str) and len(pcode) > 7 and pcode.isdigit()):
                             try:
                                 pcode = extract_party_code(fpath, p)
                                 if pcode:
@@ -922,7 +958,10 @@ def get_all_tax_data():
                                     manifest[sync_key] = s_info
                                     manifest_changed = True
                             except Exception:
-                                pcode = ''
+                                pcode = 'NO DATA'
+                        
+                        if not pcode or (isinstance(pcode, str) and len(pcode) > 7 and pcode.isdigit()):
+                            pcode = 'NO DATA'
                         
                         active_files.append({
                             'filename': entry,
@@ -948,7 +987,7 @@ def get_all_tax_data():
                             s_info = manifest.get(sync_key, {})
                             is_sync = bool(s_info.get('synced', False))
                             pcode = s_info.get('party_code')
-                            if not pcode:
+                            if not pcode or pcode in ['UNKNOWN', 'NO DATA', 'NODATA'] or (isinstance(pcode, str) and len(pcode) > 7 and pcode.isdigit()):
                                 try:
                                     pcode = extract_party_code(fpath, p)
                                     if pcode:
@@ -956,7 +995,10 @@ def get_all_tax_data():
                                         manifest[sync_key] = s_info
                                         manifest_changed = True
                                 except Exception:
-                                    pcode = ''
+                                    pcode = 'NO DATA'
+
+                            if not pcode or (isinstance(pcode, str) and len(pcode) > 7 and pcode.isdigit()):
+                                pcode = 'NO DATA'
 
                             old_files.append({
                                 'filename': entry,
@@ -1412,4 +1454,183 @@ def sync_with_google_drive():
         return {'success': True, 'platforms': drive_platforms}
     except Exception as e:
         return {'success': False, 'error': str(e)}
+
+
+# -------------------------------------------------------------------------
+# Server-Side Background Google Drive Sync (Persistent Across Page Refreshes)
+# -------------------------------------------------------------------------
+
+def load_bg_sync_state():
+    try:
+        if os.path.exists(TAX_SYNC_STATE_PATH):
+            with open(TAX_SYNC_STATE_PATH, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"Error loading bg sync state: {e}")
+    return {
+        'is_running': False,
+        'platform': '',
+        'month': '',
+        'total': 0,
+        'current_index': 0,
+        'completed': 0,
+        'failed': 0,
+        'percent': 0,
+        'current_file': '',
+        'current_platform': '',
+        'status_text': 'Idle',
+        'should_cancel': False
+    }
+
+
+def save_bg_sync_state(state):
+    try:
+        os.makedirs(TAX_STORAGE_DIR, exist_ok=True)
+        tmp = TAX_SYNC_STATE_PATH + '.tmp'
+        with open(tmp, 'w', encoding='utf-8') as f:
+            json.dump(state, f, indent=2)
+        shutil.move(tmp, TAX_SYNC_STATE_PATH)
+    except Exception as e:
+        print(f"Error saving bg sync state: {e}")
+
+
+def get_bg_sync_status():
+    global _bg_sync_thread
+    with _bg_sync_lock:
+        state = load_bg_sync_state()
+        if state.get('is_running'):
+            if _bg_sync_thread and not _bg_sync_thread.is_alive():
+                # Thread has finished
+                state['is_running'] = False
+                save_bg_sync_state(state)
+        return state
+
+
+def cancel_bg_sync():
+    with _bg_sync_lock:
+        state = load_bg_sync_state()
+        state['should_cancel'] = True
+        state['status_text'] = 'Cancelling sync...'
+        save_bg_sync_state(state)
+        return {'success': True, 'message': 'Sync cancellation requested'}
+
+
+def start_bg_sync(platform, month):
+    global _bg_sync_thread
+    with _bg_sync_lock:
+        state = load_bg_sync_state()
+        if state.get('is_running') and _bg_sync_thread and _bg_sync_thread.is_alive():
+            return {
+                'success': True,
+                'message': 'Sync already running in background',
+                'already_running': True,
+                'state': state
+            }
+
+        all_tax_data = get_all_tax_data()
+        files_to_sync = []
+
+        target_platforms = ['AJIO', 'MYNTRA', 'FLIPKART'] if str(platform).strip().upper() == 'ALL' else [normalize_platform(platform)]
+        month_norm = normalize_month(month)
+
+        for p in target_platforms:
+            p_data = all_tax_data.get('platforms', {}).get(p, {})
+            m_data = p_data.get('months', {}).get(month_norm, {})
+            files = m_data.get('files', [])
+            for f in files:
+                files_to_sync.append({
+                    'platform': p,
+                    'month': month_norm,
+                    'filename': f['filename'],
+                    'is_synced': bool(f.get('is_synced'))
+                })
+
+        pending_files = [f for f in files_to_sync if not f['is_synced']]
+        queue = pending_files if pending_files else files_to_sync
+
+        if not queue:
+            return {'success': False, 'error': f"No files found to sync in {month_norm.upper()}."}
+
+        new_state = {
+            'is_running': True,
+            'platform': platform,
+            'month': month_norm,
+            'total': len(queue),
+            'current_index': 0,
+            'completed': 0,
+            'failed': 0,
+            'percent': 0,
+            'current_file': queue[0]['filename'],
+            'current_platform': queue[0]['platform'],
+            'status_text': f"Starting sync (1 of {len(queue)})...",
+            'should_cancel': False,
+            'started_at': datetime.now().isoformat(),
+            'updated_at': datetime.now().isoformat()
+        }
+        save_bg_sync_state(new_state)
+
+        _bg_sync_thread = threading.Thread(
+            target=_bg_sync_worker,
+            args=(queue,),
+            daemon=True
+        )
+        _bg_sync_thread.start()
+
+        return {
+            'success': True,
+            'message': f"Started background sync for {len(queue)} file(s).",
+            'state': new_state
+        }
+
+
+def _bg_sync_worker(queue):
+    total = len(queue)
+    for i, item in enumerate(queue):
+        # Check cancellation
+        state = load_bg_sync_state()
+        if state.get('should_cancel'):
+            state['is_running'] = False
+            state['status_text'] = 'Sync cancelled by user.'
+            state['updated_at'] = datetime.now().isoformat()
+            save_bg_sync_state(state)
+            return
+
+        f_plat = item['platform']
+        f_month = item['month']
+        f_name = item['filename']
+
+        percent = int((i / total) * 100)
+        state['current_index'] = i + 1
+        state['current_file'] = f_name
+        state['current_platform'] = f_plat
+        state['percent'] = percent
+        state['status_text'] = f"Syncing file {i + 1} of {total}..."
+        state['updated_at'] = datetime.now().isoformat()
+        save_bg_sync_state(state)
+
+        try:
+            res = sync_single_tax_file(f_plat, f_month, f_name, is_old=False)
+            state = load_bg_sync_state()
+            if res and res.get('success'):
+                state['completed'] = state.get('completed', 0) + 1
+            else:
+                state['failed'] = state.get('failed', 0) + 1
+                print(f"Failed to sync {f_name}: {res.get('error') if res else 'Unknown error'}")
+        except Exception as e:
+            state = load_bg_sync_state()
+            state['failed'] = state.get('failed', 0) + 1
+            print(f"Exception syncing {f_name}: {e}")
+
+        save_bg_sync_state(state)
+
+    # Completed
+    final_state = load_bg_sync_state()
+    final_state['is_running'] = False
+    final_state['percent'] = 100
+    final_state['current_index'] = total
+    final_state['status_text'] = f"All files synced! ({final_state.get('completed', 0)} completed, {final_state.get('failed', 0)} failed)"
+    final_state['completed_at'] = datetime.now().isoformat()
+    final_state['updated_at'] = datetime.now().isoformat()
+    save_bg_sync_state(final_state)
+
 

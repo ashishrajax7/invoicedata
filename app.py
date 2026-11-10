@@ -166,7 +166,7 @@ def write_block_sheet(ws, items):
 
         st_upper = status.upper() if status else ''
         
-        if st_upper == 'DONE':
+        if st_upper in ['DONE', 'ALL DONE SALE AND PURCHASE', 'ONLY SALE DONE']:
             c1.fill = done_card_fill
             c1.font = done_party_font
             c1.alignment = left_align
@@ -185,7 +185,7 @@ def write_block_sheet(ws, items):
             c4.fill = done_card_fill
             c4.border = Border(left=border_done, bottom=border_done, right=border_done)
             
-        elif st_upper in ['NOT', 'FAILED']:
+        elif st_upper in ['NOT', 'FAILED'] or 'DISPUTE' in st_upper or '0 PRICE' in st_upper or st_upper.startswith('OTHER'):
             c1.fill = not_card_fill
             c1.font = not_party_font
             c1.alignment = left_align
@@ -914,9 +914,27 @@ def sync_drive_structure():
     res = tax_processor.sync_with_google_drive()
     return jsonify(res)
 
-# Startup cleanup of expired files (runs both in gunicorn on Render and local dev)
+@app.route('/api/tax/start_sync', methods=['POST'])
+def start_tax_sync():
+    payload = request.get_json() or {}
+    platform = payload.get('platform', 'AJIO')
+    month = payload.get('month', '')
+    res = tax_processor.start_bg_sync(platform, month)
+    return jsonify(res)
+
+@app.route('/api/tax/sync_status', methods=['GET'])
+def get_tax_sync_status():
+    res = tax_processor.get_bg_sync_status()
+    return jsonify(res)
+
+@app.route('/api/tax/cancel_sync', methods=['POST'])
+def cancel_tax_sync():
+    res = tax_processor.cancel_bg_sync()
+    return jsonify(res)
+
+# Startup check of expired files (respects full 9-hour expiry)
 try:
-    zip_processor.clean_expired_zip_data(force=True)
+    zip_processor.clean_expired_zip_data(force=False)
 except Exception as _startup_clean_err:
     print(f"Startup zip cleanup note: {_startup_clean_err}")
 

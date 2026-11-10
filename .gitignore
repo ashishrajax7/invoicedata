@@ -23,6 +23,9 @@ tax_reports/_temp_uploads/
 !tax_reports/
 !tax_reports/**
 !tax_reports/tax_sync_manifest.json
+tax_reports/tax_sync_state.json
+tax_reports/*.tmp
+*.tmp
 
 *.xlsx
 *.xls

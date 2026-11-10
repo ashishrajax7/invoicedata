@@ -45,7 +45,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="/static/style.css?t=1787546111">
+    <link rel="stylesheet" href="/static/style.css?t=1787552000">
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
 
@@ -279,6 +279,11 @@
                 <!-- Subtab Navigation Bar -->
                 <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-100 p-1.5 rounded-xl border border-slate-200/80">
                     <div class="flex flex-wrap items-center gap-1.5">
+                        <button type="button" onclick="switchSummarySubTab('all')" id="subtab-all" class="subtab-btn px-3.5 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 text-slate-600 hover:text-indigo-700 hover:bg-indigo-50/70 transition">
+                            <i class="fa-solid fa-layer-group text-indigo-600 text-xs"></i>
+                            <span>All (Combined)</span>
+                            <span id="subtabCountAll" class="text-[10px] bg-indigo-100 text-indigo-800 px-1.5 py-0.2 rounded font-bold border border-indigo-200">0/0</span>
+                        </button>
                         <button type="button" onclick="switchSummarySubTab('shortlist')" id="subtab-shortlist" class="subtab-btn active px-3.5 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 bg-purple-600 text-white shadow-2xs transition">
                             <i class="fa-solid fa-bag-shopping text-white text-xs"></i>
                             <span>AJIO (Short List)</span>
@@ -302,6 +307,53 @@
 
                     <div class="flex items-center gap-2 text-xs text-slate-500 pr-1">
                         <span class="inline-flex items-center gap-1 font-normal"><i class="fa-regular fa-lightbulb text-slate-400"></i> Click card status to cycle</span>
+                    </div>
+                </div>
+
+                <!-- SUBPANEL 0: ALL PLATFORMS COMBINED -->
+                <div id="subpanel-all" class="summary-subpanel hidden">
+                    <!-- Toolbar -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4 bg-white p-4 rounded-xl border border-slate-200/90 shadow-2xs">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-indigo-50 text-indigo-700 rounded-lg border border-indigo-100">
+                                <i class="fa-solid fa-layer-group text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-sm sm:text-base text-slate-900 flex items-center gap-2">
+                                    <span>All Channels Checklist</span>
+                                    <span class="text-[11px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md font-medium border border-indigo-200/70">AJIO + Myntra + Flipkart</span>
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">Unified view of all parties across all 3 platforms.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="flex items-center bg-slate-100 rounded-lg p-0.5 text-xs border border-slate-200">
+                                <button onclick="setBlockFilter('All', 'all')" id="filter-All-all" class="px-2.5 py-1 rounded-md font-medium bg-slate-900 text-white transition">All</button>
+                                <button onclick="setBlockFilter('All', 'done')" id="filter-All-done" class="px-2.5 py-1 rounded-md font-normal text-slate-600 hover:text-slate-900 transition">Done</button>
+                                <button onclick="setBlockFilter('All', 'not')" id="filter-All-not" class="px-2.5 py-1 rounded-md font-normal text-slate-600 hover:text-slate-900 transition">Issues / Disputes</button>
+                                <button onclick="setBlockFilter('All', 'pending')" id="filter-All-pending" class="px-2.5 py-1 rounded-md font-normal text-slate-600 hover:text-slate-900 transition">Pending</button>
+                            </div>
+
+                            <button onclick="markAllBlockSheet('All', 'ALL DONE SALE AND PURCHASE')" class="text-xs bg-white hover:bg-slate-50 text-emerald-700 border border-slate-200 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-2xs">
+                                <i class="fa-solid fa-check-double text-emerald-600 text-xs"></i>
+                                <span>Mark All Done</span>
+                            </button>
+                            <button onclick="clearSheetData('All')" class="text-xs bg-white hover:bg-slate-50 text-rose-700 border border-slate-200 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-2xs" title="Remove all parties across all platforms">
+                                <i class="fa-solid fa-trash-can text-rose-600 text-xs"></i>
+                                <span>Clear All</span>
+                            </button>
+
+                            <button onclick="copyBlockSheetToClipboard('All')" class="text-xs bg-slate-900 hover:bg-slate-800 active:scale-95 text-white px-3.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-2xs">
+                                <i class="fa-regular fa-copy text-xs"></i>
+                                <span>Copy for WhatsApp</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- List Container (Full Width Rows) -->
+                    <div id="container-All" class="flex flex-col gap-2">
+                        <!-- Populated by JS -->
                     </div>
                 </div>
 
@@ -329,7 +381,7 @@
                                 <button onclick="setBlockFilter('Short List', 'pending')" id="filter-ShortList-pending" class="px-2.5 py-1 rounded-md font-normal text-slate-600 hover:text-slate-900 transition">Pending</button>
                             </div>
 
-                            <button onclick="markAllBlockSheet('Short List', 'DONE')" class="text-xs bg-white hover:bg-slate-50 text-emerald-700 border border-slate-200 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-2xs">
+                            <button onclick="markAllBlockSheet('Short List', 'ALL DONE SALE AND PURCHASE')" class="text-xs bg-white hover:bg-slate-50 text-emerald-700 border border-slate-200 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-2xs">
                                 <i class="fa-solid fa-check-double text-emerald-600 text-xs"></i>
                                 <span>Mark All Done</span>
                             </button>
@@ -345,8 +397,8 @@
                         </div>
                     </div>
 
-                    <!-- Cards Container (4 to 5 Columns) -->
-                    <div id="container-ShortList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5">
+                    <!-- List Container (Full Width Rows) -->
+                    <div id="container-ShortList" class="flex flex-col gap-2">
                         <!-- Populated by JS -->
                     </div>
                 </div>
@@ -376,7 +428,7 @@
                                 <button onclick="setBlockFilter('Party Details', 'pending')" id="filter-PartyDetails-pending" class="px-2.5 py-1 rounded-md font-normal text-slate-600 hover:text-slate-900 transition">Pending</button>
                             </div>
 
-                            <button onclick="markAllBlockSheet('Party Details', 'DONE')" class="text-xs bg-white hover:bg-slate-50 text-emerald-700 border border-slate-200 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-2xs">
+                            <button onclick="markAllBlockSheet('Party Details', 'ALL DONE SALE AND PURCHASE')" class="text-xs bg-white hover:bg-slate-50 text-emerald-700 border border-slate-200 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-2xs">
                                 <i class="fa-solid fa-check-double text-emerald-600 text-xs"></i>
                                 <span>Mark All Done</span>
                             </button>
@@ -392,8 +444,8 @@
                         </div>
                     </div>
 
-                    <!-- Cards Container (4 to 5 Columns) -->
-                    <div id="container-PartyDetails" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5">
+                    <!-- List Container (Full Width Rows) -->
+                    <div id="container-PartyDetails" class="flex flex-col gap-2">
                         <!-- Populated by JS -->
                     </div>
                 </div>
@@ -422,7 +474,7 @@
                                 <button onclick="setBlockFilter('Summary', 'pending')" id="filter-Summary-pending" class="px-2.5 py-1 rounded-md font-normal text-slate-600 hover:text-slate-900 transition">Pending</button>
                             </div>
 
-                            <button onclick="markAllBlockSheet('Summary', 'DONE')" class="text-xs bg-white hover:bg-slate-50 text-emerald-700 border border-slate-200 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-2xs">
+                            <button onclick="markAllBlockSheet('Summary', 'ALL DONE SALE AND PURCHASE')" class="text-xs bg-white hover:bg-slate-50 text-emerald-700 border border-slate-200 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 shadow-2xs">
                                 <i class="fa-solid fa-check-double text-emerald-600 text-xs"></i>
                                 <span>Mark All Done</span>
                             </button>
@@ -438,8 +490,8 @@
                         </div>
                     </div>
 
-                    <!-- Cards Container (4 to 5 Columns) -->
-                    <div id="container-Summary" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5">
+                    <!-- List Container (Full Width Rows) -->
+                    <div id="container-Summary" class="flex flex-col gap-2">
                         <!-- Populated by JS -->
                     </div>
                 </div>
@@ -612,6 +664,10 @@
 
                         <!-- Platform Switcher Buttons for Quick ZIP Upload -->
                         <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200/80">
+                            <button type="button" onclick="switchZipPlatform('ALL')" id="filesZipBtn-ALL" class="filesZipPlatBtn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-layer-group text-indigo-600 text-xs"></i>
+                                <span>All</span>
+                            </button>
                             <button type="button" onclick="switchZipPlatform('AJIO')" id="filesZipBtn-AJIO" class="filesZipPlatBtn px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-purple-600 text-white shadow-xs">
                                 <i class="fa-solid fa-bag-shopping text-white text-xs"></i>
                                 <span>AJIO</span>
@@ -1001,6 +1057,10 @@
                 <!-- Platform Switcher Tabs (AJIO, Myntra, Flipkart) -->
                 <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-100 p-1.5 rounded-xl border border-slate-200/80">
                     <div class="flex items-center gap-1.5">
+                        <button type="button" onclick="switchTaxPlatform('ALL')" id="taxPlatBtn-ALL" class="taxPlatBtn px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-layer-group text-indigo-600 text-xs"></i>
+                            <span>All</span>
+                        </button>
                         <button type="button" onclick="switchTaxPlatform('AJIO')" id="taxPlatBtn-AJIO" class="taxPlatBtn px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-purple-600 text-white shadow-2xs">
                             <i class="fa-solid fa-bag-shopping text-xs text-white"></i>
                             <span>AJIO</span>
@@ -1119,8 +1179,8 @@
                             </h3>
                             <p class="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-2">
                                 <span class="font-medium text-slate-600">Upload Order, Details, and Summary ZIP archives.</span>
-                                <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md text-[11px] font-bold" title="Auto-cleans uploaded files after 5 hours to keep Render Free 512MB storage fast and clean">
-                                    <i class="fa-solid fa-clock-rotate-left"></i> Auto-expires in 5h (512MB Safe)
+                                <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md text-[11px] font-bold" title="Uploaded ZIP data is protected and kept intact for 9 hours, even if web app sleeps or restarts">
+                                    <i class="fa-solid fa-clock-rotate-left"></i> Retained for 9 Hours (Sleep-Proof)
                                 </span>
                             </p>
                         </div>
@@ -1128,6 +1188,10 @@
 
                     <!-- Platform Switcher Buttons -->
                     <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200/80">
+                        <button onclick="switchZipPlatform('ALL')" id="zipPlatformBtn-ALL" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-layer-group text-indigo-600 text-xs"></i>
+                            <span>All</span>
+                        </button>
                         <button onclick="switchZipPlatform('AJIO')" id="zipPlatformBtn-AJIO" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-purple-600 text-white shadow-sm">
                             <i class="fa-solid fa-bag-shopping text-white text-xs"></i>
                             <span>AJIO</span>
@@ -1303,8 +1367,13 @@
                     <label class="block font-medium text-slate-800 mb-1">Status</label>
                     <select id="formBlockStatus" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none bg-white text-slate-900 font-medium">
                         <option value="">Pending (Blank)</option>
-                        <option value="DONE">DONE (Completed)</option>
-                        <option value="NOT">NOT (Cancelled)</option>
+                        <option value="ALL DONE SALE AND PURCHASE">ALL DONE SALE AND PURCHASE</option>
+                        <option value="ONLY SALE DONE">ONLY SALE DONE</option>
+                        <option value="PENDING DUE TO SALE PRICE DISPUTE">PENDING DUE TO SALE PRICE DISPUTE</option>
+                        <option value="PENDING DUE TO PURCHASE PRICE DISPUTE">PENDING DUE TO PURCHASE PRICE DISPUTE</option>
+                        <option value="PENDING DUE TO 0 PRICE IN SALE">PENDING DUE TO 0 PRICE IN SALE</option>
+                        <option value="PENDING DUE TO 0 PRICE IN PURCHASE">PENDING DUE TO 0 PRICE IN PURCHASE</option>
+                        <option value="OTHERS">OTHERS</option>
                     </select>
                 </div>
 
@@ -1442,7 +1511,7 @@
                     <label class="block font-bold text-slate-800 mb-1">Tax Reports Google Drive Folder ID</label>
                     <input type="text" id="taxDriveFolderIdInput" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-amber-500 focus:outline-none text-slate-900 font-mono text-xs" placeholder="1aFmrWvPx-0QHkIkhieB-a9F2r9Zi8OOu">
                     <p class="text-[11px] text-slate-500 mt-1">
-                        Google Drive <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-700 font-mono">Tax Report</code> folder URL ka ID: <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-700 font-mono">1aFmrWvPx-0QHkIkhieB-a9F2r9Zi8OOu</code>
+                        Google Drive <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-700 font-mono">Tax Report</code> folder URL ID: <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-700 font-mono">1aFmrWvPx-0QHkIkhieB-a9F2r9Zi8OOu</code>
                     </p>
                 </div>
 
@@ -1452,11 +1521,11 @@
                         <i class="fa-solid fa-bolt text-amber-600"></i> Google Apps Script 1-Minute Setup:
                     </div>
                     <ol class="list-decimal list-inside space-y-1 pl-1 text-slate-700">
-                        <li><a href="https://script.google.com/home/start" target="_blank" class="text-indigo-600 underline font-semibold">script.google.com</a> par jaa kar <strong>New Project</strong> banayein.</li>
-                        <li>Project folder me rakhi <code class="bg-white border px-1 py-0.5 rounded text-slate-800 font-mono">google_apps_script_code.js</code> file ka code copy karke paste karein aur Save karein.</li>
-                        <li>Upar blue <strong>Deploy</strong> button $\rightarrow$ <strong>New deployment</strong> $\rightarrow$ Type: <strong>Web app</strong> chunein.</li>
-                        <li><strong>Execute as: Me</strong> aur <strong>Who has access: Anyone</strong> select karke <strong>Deploy</strong> karein.</li>
-                        <li>Mila hua <strong>Web app URL</strong> upar paste karein aur <strong>Save & Connect</strong> karein!</li>
+                        <li>Go to <a href="https://script.google.com/home/start" target="_blank" class="text-indigo-600 underline font-semibold">script.google.com</a> and create a <strong>New Project</strong>.</li>
+                        <li>Copy the code from <code class="bg-white border px-1 py-0.5 rounded text-slate-800 font-mono">google_apps_script_code.js</code> in this project, paste it into the editor, and click Save.</li>
+                        <li>Click the blue <strong>Deploy</strong> button $\rightarrow$ <strong>New deployment</strong> $\rightarrow$ Select type: <strong>Web app</strong>.</li>
+                        <li>Set <strong>Execute as: Me</strong> and <strong>Who has access: Anyone</strong>, then click <strong>Deploy</strong>.</li>
+                        <li>Copy the generated <strong>Web app URL</strong>, paste it into the field above, and click <strong>Save & Connect</strong>!</li>
                     </ol>
                 </div>
 
@@ -1476,14 +1545,19 @@
     </div>
 
     <!-- Modal: Google Drive Sync Progress -->
-    <div id="taxSyncProgressModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="taxSyncProgressModal" onclick="if (event.target === this) closeTaxSyncModalKeepRunning()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden transform transition-all">
             <div class="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-between">
                 <div class="flex items-center space-x-2.5">
                     <i class="fa-brands fa-google-drive text-xl"></i>
                     <h3 class="font-bold text-sm">Syncing to Google Drive</h3>
                 </div>
-                <span id="taxSyncProgressPercent" class="text-xs font-mono font-bold bg-white/20 px-2 py-0.5 rounded-full">0%</span>
+                <div class="flex items-center gap-2">
+                    <span id="taxSyncProgressPercent" class="text-xs font-mono font-bold bg-white/20 px-2 py-0.5 rounded-full">0%</span>
+                    <button type="button" onclick="closeTaxSyncModalKeepRunning()" class="text-white/80 hover:text-white hover:bg-white/10 rounded-lg p-1.5 transition" title="Close (Keep syncing in background)">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                </div>
             </div>
             <div class="p-6 space-y-4">
                 <!-- Progress Bar -->
@@ -1503,11 +1577,44 @@
                     <div id="taxSyncCurrentFilename" class="font-mono font-semibold text-slate-800 truncate text-[11px]">Preparing...</div>
                 </div>
 
-                <div class="flex items-center justify-end pt-2">
-                    <button type="button" onclick="cancelBatchSync()" id="taxSyncCancelBtn" class="px-4 py-1.5 text-xs font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition">Cancel</button>
+                <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <button type="button" onclick="cancelBatchSync()" id="taxSyncCancelBtn" class="px-3.5 py-1.5 text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg border border-rose-200 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-ban text-[11px]"></i>
+                        <span>Cancel</span>
+                    </button>
+                    <button type="button" onclick="closeTaxSyncModalKeepRunning()" id="taxSyncCloseBtn" class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl shadow-md transition flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-down-left-and-up-right-to-center text-[11px]"></i>
+                        <span>Close (Run in Background)</span>
+                    </button>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Floating Google Drive Sync Background Widget -->
+    <div id="taxSyncFloatingPill" onclick="openTaxSyncProgressModal()" class="hidden fixed bottom-6 right-6 z-40 bg-slate-900/95 hover:bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl border border-slate-700 backdrop-blur-md flex items-center gap-3.5 cursor-pointer transition-all duration-200 transform hover:scale-105 group select-none">
+        <div class="relative flex items-center justify-center w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+            <i class="fa-brands fa-google-drive text-base animate-pulse"></i>
+            <span class="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+        </div>
+        <div class="flex flex-col">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-100">Drive Syncing in Background</span>
+                <span id="taxSyncFloatingPercent" class="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-500/30">0%</span>
+            </div>
+            <div class="flex items-center gap-2 mt-1">
+                <div class="w-32 bg-slate-800 rounded-full h-1.5 overflow-hidden border border-slate-700">
+                    <div id="taxSyncFloatingBar" class="bg-gradient-to-r from-blue-400 to-emerald-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <span id="taxSyncFloatingText" class="text-[10px] text-slate-300 font-mono truncate max-w-[140px]">0 / 0</span>
+            </div>
+        </div>
+        <button type="button" onclick="event.stopPropagation(); openTaxSyncProgressModal()" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition" title="Open full progress view">
+            <i class="fa-solid fa-expand text-xs"></i>
+        </button>
     </div>
 
     <!-- Print Container -->
@@ -1517,6 +1624,6 @@
     <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
     <!-- Scripts -->
-    <script src="/static/app.js?t=1787546300"></script>
+    <script src="/static/app.js?t=1787590000"></script>
 </body>
 </html>
