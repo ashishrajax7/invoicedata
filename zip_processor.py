@@ -5,14 +5,230 @@ import shutil
 import zipfile
 import tempfile
 import time
+import base64
+import threading
+import requests
 from datetime import datetime, timedelta
 from urllib.parse import quote
 
 ZIP_STORAGE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'zip_storage')
 REGISTRY_FILE = os.path.join(ZIP_STORAGE_DIR, 'registry.json')
+CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tax_config.json')
 VALID_PLATFORMS = ['AJIO', 'MYNTRA', 'FLIPKART']
 ZIP_EXPIRY_HOURS = float(os.environ.get('ZIP_EXPIRY_HOURS', 9.0))
 _last_cleanup_timestamp = 0.0
+
+def get_drive_config():
+    """
+    Loads Google Drive & GAS Web App settings from tax_config.json or environment
+    """
+    cfg = {
+        'folder_id': os.environ.get('TAX_DRIVE_FOLDER_ID', '1aFmrWvPx-0QHkIkhieB-a9F2r9Zi8OOu'),
+        'gas_url': os.environ.get('TAX_DRIVE_GAS_URL', ''),
+        'enabled': True
+    }
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                cfg.update(data)
+        except Exception:
+            pass
+
+    env_fid = os.environ.get('TAX_DRIVE_FOLDER_ID') or os.environ.get('DRIVE_FOLDER_ID') or os.environ.get('GOOGLE_DRIVE_FOLDER_ID')
+    if env_fid:
+        cfg['folder_id'] = env_fid.strip()
+
+    env_gas = os.environ.get('TAX_DRIVE_GAS_URL') or os.environ.get('GOOGLE_APPS_SCRIPT_URL') or os.environ.get('GAS_URL')
+    if env_gas:
+        cfg['gas_url'] = env_gas.strip()
+
+    return cfg
+
+def sync_upload_file_to_drive(platform, party_code, category, filename, local_path):
+    """
+    Uploads an individual extracted file to Google Drive under ZIP_STORAGE folder
+    """
+    cfg = get_drive_config()
+    if not cfg.get('enabled') or not cfg.get('gas_url'):
+        return None
+    try:
+        if not os.path.exists(local_path):
+            return None
+        with open(local_path, 'rb') as f:
+            b64_content = base64.b64encode(f.read()).decode('utf-8')
+        mimetype = 'text/csv' if filename.lower().endswith('.csv') else (
+            'application/pdf' if filename.lower().endswith('.pdf') else
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        payload = {
+            'action': 'zip_upload_file',
+            'platform': platform,
+            'party_code': str(party_code),
+            'category': category,
+            'filename': filename,
+            'content': b64_content,
+            'mimetype': mimetype,
+            'root_folder_id': cfg.get('folder_id')
+        }
+        res = requests.post(cfg['gas_url'], json=payload, timeout=60)
+        return res.json()
+    except Exception as e:
+        print(f"Error syncing {filename} to Google Drive: {e}")
+        return None
+
+def sync_registry_to_drive(registry_data):
+    """
+    Saves the entire ZIP registry to Google Drive for persistent sleep-recovery
+    """
+    cfg = get_drive_config()
+    if not cfg.get('enabled') or not cfg.get('gas_url'):
+        return None
+    try:
+        payload = {
+            'action': 'zip_save_registry',
+            'registry': registry_data,
+            'root_folder_id': cfg.get('folder_id')
+        }
+        res = requests.post(cfg['gas_url'], json=payload, timeout=30)
+        return res.json()
+    except Exception as e:
+        print(f"Error syncing registry to Google Drive: {e}")
+        return None
+
+def restore_registry_from_drive():
+    """
+    Restores the ZIP registry from Google Drive when server wakes up from sleep
+    """
+    cfg = get_drive_config()
+    if not cfg.get('enabled') or not cfg.get('gas_url'):
+        return None
+    try:
+        payload = {
+            'action': 'zip_get_registry',
+            'root_folder_id': cfg.get('folder_id')
+        }
+        res = requests.post(cfg['gas_url'], json=payload, timeout=25)
+        resp_data = res.json()
+        if resp_data.get('success') and resp_data.get('registry'):
+            reg = resp_data['registry']
+            if isinstance(reg, dict) and 'platforms' in reg:
+                # Save locally so subsequent calls are fast
+                save_registry(reg, sync_to_drive=False)
+                return reg
+    except Exception as e:
+        print(f"Note: Could not restore registry from Drive: {e}")
+    return None
+
+def download_file_from_drive(platform, party_code, category, filename, save_path):
+    """
+    Downloads a single file from Google Drive if missing on local disk after server sleep
+    """
+    cfg = get_drive_config()
+    if not cfg.get('enabled') or not cfg.get('gas_url'):
+        return False
+    try:
+        payload = {
+            'action': 'zip_download_file',
+            'platform': platform,
+            'party_code': str(party_code),
+            'category': category,
+            'filename': filename,
+            'root_folder_id': cfg.get('folder_id')
+        }
+        res = requests.post(cfg['gas_url'], json=payload, timeout=60)
+        resp = res.json()
+        if resp.get('success') and resp.get('content'):
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            raw = base64.b64decode(resp['content'])
+            with open(save_path, 'wb') as f:
+                f.write(raw)
+            return True
+    except Exception as e:
+        print(f"Error downloading {filename} from Google Drive: {e}")
+    return False
+
+def ensure_file_on_disk(platform, party_code, category, filename):
+    """
+    Guarantees the file exists on local disk, pulling from Drive on-demand if server restarted
+    """
+    p = normalize_platform(platform)
+    party_code = str(party_code).strip()
+    safe_file = os.path.basename(filename)
+    target_path = os.path.join(ZIP_STORAGE_DIR, p, party_code, category, safe_file)
+
+    if os.path.exists(target_path) and os.path.getsize(target_path) > 0:
+        return target_path
+
+    # Attempt download from Google Drive
+    success = download_file_from_drive(p, party_code, category, safe_file, target_path)
+    if success and os.path.exists(target_path):
+        return target_path
+    return None
+
+def sync_clear_storage_on_drive(platform=None):
+    """
+    Clears ZIP storage on Google Drive
+    """
+    cfg = get_drive_config()
+    if not cfg.get('enabled') or not cfg.get('gas_url'):
+        return None
+    try:
+        payload = {
+            'action': 'zip_clear_storage',
+            'platform': platform or 'ALL',
+            'root_folder_id': cfg.get('folder_id')
+        }
+        res = requests.post(cfg['gas_url'], json=payload, timeout=30)
+        return res.json()
+    except Exception as e:
+        print(f"Error clearing ZIP storage on Google Drive: {e}")
+        return None
+
+def trigger_drive_zip_cleanup():
+    """
+    Triggers Google Drive 9-hour expired zip cleanup via GAS
+    """
+    cfg = get_drive_config()
+    if not cfg.get('enabled') or not cfg.get('gas_url'):
+        return None
+    try:
+        payload = {
+            'action': 'cleanup_expired_zip',
+            'root_folder_id': cfg.get('folder_id')
+        }
+        res = requests.post(cfg['gas_url'], json=payload, timeout=30)
+        return res.json()
+    except Exception as e:
+        return None
+
+def background_sync_to_drive(files_to_sync, registry_snapshot):
+    """
+    Uploads files and updated registry to Google Drive asynchronously
+    so user UI remains ultra-fast without delay!
+    """
+    def _worker():
+        for item in files_to_sync:
+            sync_upload_file_to_drive(
+                platform=item['platform'],
+                party_code=item['party_code'],
+                category=item['category'],
+                filename=item['filename'],
+                local_path=item['path']
+            )
+        sync_registry_to_drive(registry_snapshot)
+
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()
+
+def sync_all_from_drive():
+    """
+    Forces a fresh sync of the ZIP registry from Google Drive
+    """
+    restored = restore_registry_from_drive()
+    if restored:
+        return {'success': True, 'message': 'Successfully synced ZIP registry from Google Drive', 'data': get_all_zip_status()}
+    return {'success': False, 'message': 'No active ZIP registry found on Google Drive or sync disabled'}
 
 def normalize_platform(platform):
     p = (platform or 'AJIO').strip().upper()
@@ -41,7 +257,7 @@ def init_zip_storage():
         with open(REGISTRY_FILE, 'w', encoding='utf-8') as f:
             json.dump(initial, f, indent=2)
 
-def load_registry():
+def load_registry(auto_restore=True):
     init_zip_storage()
     try:
         with open(REGISTRY_FILE, 'r', encoding='utf-8') as f:
@@ -51,21 +267,35 @@ def load_registry():
             for p in VALID_PLATFORMS:
                 if p not in data['platforms']:
                     data['platforms'][p] = {'parties': {}, 'stats': {'order_zips': 0, 'details_zips': 0, 'summary_zips': 0}}
+            
+            # If local registry has 0 parties (e.g. server restarted or woke from sleep)
+            has_parties = any(bool(data['platforms'][p].get('parties')) for p in VALID_PLATFORMS)
+            if not has_parties and auto_restore:
+                restored = restore_registry_from_drive()
+                if restored:
+                    return restored
+
             return data
     except Exception as e:
         print(f"Error loading registry: {e}")
+        if auto_restore:
+            restored = restore_registry_from_drive()
+            if restored:
+                return restored
         return {
             'last_updated': datetime.now().isoformat(),
             'platforms': {p: {'parties': {}, 'stats': {'order_zips': 0, 'details_zips': 0, 'summary_zips': 0}} for p in VALID_PLATFORMS}
         }
 
-def save_registry(registry_data):
+def save_registry(registry_data, sync_to_drive=False):
     init_zip_storage()
     registry_data['last_updated'] = datetime.now().isoformat()
     temp_file = REGISTRY_FILE + '.tmp'
     with open(temp_file, 'w', encoding='utf-8') as f:
         json.dump(registry_data, f, indent=2)
     shutil.move(temp_file, REGISTRY_FILE)
+    if sync_to_drive:
+        sync_registry_to_drive(registry_data)
 
 def sort_party_key(x):
     s = str(x)
@@ -182,6 +412,7 @@ def process_order_zip(platform, extract_dir, original_zip_name=''):
     saved_count = 0
     two_more_count = 0
     parties_updated = []
+    files_to_sync = []
 
     for party_code, pfiles in extracted_parties.items():
         party_storage_dir = os.path.join(ZIP_STORAGE_DIR, platform, party_code)
@@ -237,6 +468,13 @@ def process_order_zip(platform, extract_dir, original_zip_name=''):
                 party_entry['pr_file'] = file_meta
                 
             saved_count += 1
+            files_to_sync.append({
+                'platform': platform,
+                'party_code': party_code,
+                'category': 'od',
+                'filename': ord_fname,
+                'path': ord_dst
+            })
             
         # Save 2 MORE INVOICE (Optional)
         if pfiles['two_more_invoice']:
@@ -250,6 +488,13 @@ def process_order_zip(platform, extract_dir, original_zip_name=''):
                 'source_zip': original_zip_name
             }
             two_more_count += 1
+            files_to_sync.append({
+                'platform': platform,
+                'party_code': party_code,
+                'category': 'two_more_invoice',
+                'filename': tm_fname,
+                'path': tm_dst
+            })
 
         party_entry['uploaded_at'] = party_entry.get('uploaded_at') or now_iso
         party_entry['updated_at'] = now_iso
@@ -265,6 +510,8 @@ def process_order_zip(platform, extract_dir, original_zip_name=''):
     p_data['last_uploaded_at'] = datetime.now().isoformat()
     p_data['expires_at'] = (datetime.now() + timedelta(hours=ZIP_EXPIRY_HOURS)).isoformat()
     save_registry(registry)
+    if files_to_sync:
+        background_sync_to_drive(files_to_sync, registry)
     
     file_type_label = 'OD'
     return {
@@ -292,6 +539,7 @@ def process_details_or_summary_zip(platform, zip_type, extract_dir, original_zip
     
     saved_count = 0
     parties_updated = []
+    files_to_sync = []
     
     for root, dirs, files in os.walk(extract_dir):
         if '__MACOSX' in root:
@@ -368,6 +616,13 @@ def process_details_or_summary_zip(platform, zip_type, extract_dir, original_zip
             except Exception:
                 pass
             saved_count += 1
+            files_to_sync.append({
+                'platform': platform,
+                'party_code': party_code,
+                'category': zip_type,
+                'filename': fname,
+                'path': target_dst
+            })
             if party_code not in parties_updated:
                 parties_updated.append(party_code)
 
@@ -376,6 +631,8 @@ def process_details_or_summary_zip(platform, zip_type, extract_dir, original_zip
     p_data['last_uploaded_at'] = datetime.now().isoformat()
     p_data['expires_at'] = (datetime.now() + timedelta(hours=ZIP_EXPIRY_HOURS)).isoformat()
     save_registry(registry)
+    if files_to_sync:
+        background_sync_to_drive(files_to_sync, registry)
     
     return {
         'success': True,
@@ -386,12 +643,52 @@ def process_details_or_summary_zip(platform, zip_type, extract_dir, original_zip
         'message': f"Successfully processed {saved_count} {zip_type} file(s) for {platform} across {len(parties_updated)} parties!"
     }
 
+def detect_platform_from_zip_contents(zip_filename, extract_dir, default_platform='AJIO'):
+    """
+    Intelligently auto-detects whether the ZIP belongs to AJIO, MYNTRA, or FLIPKART:
+    1. Checks the ZIP filename (e.g. 'ajio_...', 'myntra_...', 'flipkart_...', 'fk_...')
+    2. Inspects inner filenames for keywords (AJIO, MYNTRA, FLIPKART)
+    3. Inspects order invoice prefixes (AJ27S -> AJIO, MY27S -> MYNTRA, FK27S -> FLIPKART)
+    4. Falls back to default_platform if no platform pattern is found
+    """
+    z_lower = (zip_filename or '').lower()
+    if 'myntra' in z_lower or 'myn' in z_lower:
+        return 'MYNTRA'
+    if 'flipkart' in z_lower or 'flip' in z_lower or 'fk' in z_lower:
+        return 'FLIPKART'
+    if 'ajio' in z_lower:
+        return 'AJIO'
+
+    ajio_votes = 0
+    myntra_votes = 0
+    flipkart_votes = 0
+
+    for root, dirs, files in os.walk(extract_dir):
+        if '__MACOSX' in root:
+            continue
+        for fname in files:
+            fn_upper = fname.upper()
+            if 'MYNTRA' in fn_upper or re.search(r'\bMY27S', fn_upper) or re.search(r'[-_]MY[-_]', fn_upper):
+                myntra_votes += 1
+            elif 'FLIPKART' in fn_upper or re.search(r'\bFK27S', fn_upper) or re.search(r'[-_]FK[-_]', fn_upper):
+                flipkart_votes += 1
+            elif 'AJIO' in fn_upper or re.search(r'\bAJ27S', fn_upper) or re.search(r'[-_]AJ[-_]', fn_upper):
+                ajio_votes += 1
+
+    if myntra_votes > ajio_votes and myntra_votes > flipkart_votes:
+        return 'MYNTRA'
+    if flipkart_votes > ajio_votes and flipkart_votes > myntra_votes:
+        return 'FLIPKART'
+    if ajio_votes > 0:
+        return 'AJIO'
+
+    return normalize_platform(default_platform)
+
 def handle_zip_upload(platform, zip_type, file_storage):
     """
-    Main dispatcher for uploaded ZIP files
+    Main dispatcher for uploaded ZIP files with automatic platform bifurcation
     """
     clean_expired_zip_data()
-    platform = normalize_platform(platform)
     zip_type_clean = zip_type.strip().lower()
     
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -406,6 +703,9 @@ def handle_zip_upload(platform, zip_type, file_storage):
                 zf.extractall(extract_dir)
         except Exception as e:
             return {'success': False, 'error': f"Failed to extract ZIP: {str(e)}"}
+
+        # Auto-bifurcate platform based on ZIP contents and filename
+        platform = detect_platform_from_zip_contents(file_storage.filename, extract_dir, default_platform=platform)
             
         if 'order' in zip_type_clean or 'od' in zip_type_clean:
             return process_order_zip(platform, extract_dir, original_zip_name=file_storage.filename)
@@ -465,6 +765,17 @@ def get_party_bundle(platform, party_code):
                 'download_url': f"/api/zip/download/{platform}/{party_code}/od/{quote(files[0])}",
                 'type': 'OD'
             }
+    if not result['has_od'] and party_info and party_info.get('od_file'):
+        m = party_info['od_file']
+        fn = m.get('filename')
+        if fn:
+            result['has_od'] = True
+            result['od_file'] = {
+                'filename': fn,
+                'path': os.path.join(od_dir, fn),
+                'download_url': f"/api/zip/download/{platform}/{party_code}/od/{quote(fn)}",
+                'type': 'OD'
+            }
 
     # Check PR folder (Fallback for legacy uploads)
     pr_dir = os.path.join(party_dir, 'pr')
@@ -476,6 +787,17 @@ def get_party_bundle(platform, party_code):
                 'filename': files[0],
                 'path': os.path.join(pr_dir, files[0]),
                 'download_url': f"/api/zip/download/{platform}/{party_code}/pr/{quote(files[0])}",
+                'type': 'PR'
+            }
+    if not result['has_pr'] and party_info and party_info.get('pr_file'):
+        m = party_info['pr_file']
+        fn = m.get('filename')
+        if fn:
+            result['has_pr'] = True
+            result['pr_file'] = {
+                'filename': fn,
+                'path': os.path.join(pr_dir, fn),
+                'download_url': f"/api/zip/download/{platform}/{party_code}/pr/{quote(fn)}",
                 'type': 'PR'
             }
 
@@ -498,6 +820,16 @@ def get_party_bundle(platform, party_code):
                 'path': os.path.join(tm_dir, files[0]),
                 'download_url': f"/api/zip/download/{platform}/{party_code}/two_more_invoice/{quote(files[0])}"
             }
+    if not result['has_two_more_invoice'] and party_info and party_info.get('two_more_invoice'):
+        m = party_info['two_more_invoice']
+        fn = m.get('filename')
+        if fn:
+            result['has_two_more_invoice'] = True
+            result['two_more_invoice'] = {
+                'filename': fn,
+                'path': os.path.join(tm_dir, fn),
+                'download_url': f"/api/zip/download/{platform}/{party_code}/two_more_invoice/{quote(fn)}"
+            }
 
     # Check Details
     dt_dir = os.path.join(party_dir, 'details')
@@ -510,6 +842,16 @@ def get_party_bundle(platform, party_code):
                 'path': os.path.join(dt_dir, files[0]),
                 'download_url': f"/api/zip/download/{platform}/{party_code}/details/{quote(files[0])}"
             }
+    if not result['has_details'] and party_info and party_info.get('details_file'):
+        m = party_info['details_file']
+        fn = m.get('filename')
+        if fn:
+            result['has_details'] = True
+            result['details_file'] = {
+                'filename': fn,
+                'path': os.path.join(dt_dir, fn),
+                'download_url': f"/api/zip/download/{platform}/{party_code}/details/{quote(fn)}"
+            }
 
     # Check Summary
     sm_dir = os.path.join(party_dir, 'summary')
@@ -521,6 +863,16 @@ def get_party_bundle(platform, party_code):
                 'filename': files[0],
                 'path': os.path.join(sm_dir, files[0]),
                 'download_url': f"/api/zip/download/{platform}/{party_code}/summary/{quote(files[0])}"
+            }
+    if not result['has_summary'] and party_info and party_info.get('summary_file'):
+        m = party_info['summary_file']
+        fn = m.get('filename')
+        if fn:
+            result['has_summary'] = True
+            result['summary_file'] = {
+                'filename': fn,
+                'path': os.path.join(sm_dir, fn),
+                'download_url': f"/api/zip/download/{platform}/{party_code}/summary/{quote(fn)}"
             }
 
     result['uploaded_at'] = party_info.get('uploaded_at', '') if party_info else ''
@@ -593,19 +945,38 @@ def get_all_zip_status():
 
 def export_party_as_zip(platform, party_code, output_zip_path):
     """
-    Packages all available files of a party into a single downloadable .zip
+    Packages all available files of a party into a single downloadable .zip,
+    ensuring files are restored from Google Drive if local disk was wiped.
     """
     bundle = get_party_bundle(platform, party_code)
+
+    def _ensure(category, f_info):
+        if not f_info:
+            return None
+        local_p = f_info.get('path')
+        if not local_p or not os.path.exists(local_p):
+            local_p = ensure_file_on_disk(platform, party_code, category, f_info.get('filename'))
+        return local_p
+
     with zipfile.ZipFile(output_zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
         if bundle['has_order_file'] and bundle['order_file']:
-            prefix = bundle.get('order_file_type', 'OD')
-            zf.write(bundle['order_file']['path'], arcname=f"{prefix}_{bundle['order_file']['filename']}")
+            cat = 'od' if bundle.get('has_od') else 'pr'
+            f_path = _ensure(cat, bundle['order_file'])
+            if f_path and os.path.exists(f_path):
+                prefix = bundle.get('order_file_type', 'OD')
+                zf.write(f_path, arcname=f"{prefix}_{bundle['order_file']['filename']}")
         if bundle['has_two_more_invoice'] and bundle['two_more_invoice']:
-            zf.write(bundle['two_more_invoice']['path'], arcname=f"2MORE_{bundle['two_more_invoice']['filename']}")
+            f_path = _ensure('two_more_invoice', bundle['two_more_invoice'])
+            if f_path and os.path.exists(f_path):
+                zf.write(f_path, arcname=f"2MORE_{bundle['two_more_invoice']['filename']}")
         if bundle['has_details'] and bundle['details_file']:
-            zf.write(bundle['details_file']['path'], arcname=f"DETAILS_{bundle['details_file']['filename']}")
+            f_path = _ensure('details', bundle['details_file'])
+            if f_path and os.path.exists(f_path):
+                zf.write(f_path, arcname=f"DETAILS_{bundle['details_file']['filename']}")
         if bundle['has_summary'] and bundle['summary_file']:
-            zf.write(bundle['summary_file']['path'], arcname=f"SUMMARY_{bundle['summary_file']['filename']}")
+            f_path = _ensure('summary', bundle['summary_file'])
+            if f_path and os.path.exists(f_path):
+                zf.write(f_path, arcname=f"SUMMARY_{bundle['summary_file']['filename']}")
 
 def safe_rmtree(path):
     if not os.path.exists(path):
@@ -632,7 +1003,7 @@ def safe_rmtree(path):
 
 def clear_zip_storage_data(platform=None):
     """
-    Clears zip storage with safety backup
+    Clears zip storage locally and on Google Drive with safety backup
     """
     init_zip_storage()
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -665,6 +1036,9 @@ def clear_zip_storage_data(platform=None):
             'platforms': {p: {'parties': {}, 'stats': {'order_zips': 0, 'details_zips': 0, 'summary_zips': 0}} for p in VALID_PLATFORMS}
         }
         save_registry(registry)
+
+    # Clear Google Drive persistent storage as well
+    sync_clear_storage_on_drive(platform)
         
     return True
 
@@ -788,7 +1162,14 @@ def clean_expired_zip_data(expiry_hours=None, force=False):
             removed_parties.append(f"{platform}:{pcode}")
 
     if modified:
-        save_registry(registry)
+        save_registry(registry, sync_to_drive=True)
+
+    # Trigger Google Drive cleanup in the background
+    try:
+        t_clean = threading.Thread(target=trigger_drive_zip_cleanup, daemon=True)
+        t_clean.start()
+    except Exception:
+        pass
 
     # 2. Clean temporary exported bundles (*_bundle.zip) in ZIP_STORAGE_DIR older than 15 minutes
     try:

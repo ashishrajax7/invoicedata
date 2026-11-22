@@ -700,10 +700,10 @@ def get_party_zip_files():
 def download_zip_party_file(platform, party_code, category, filename):
     p = zip_processor.normalize_platform(platform)
     safe_file = os.path.basename(filename)
-    target_path = os.path.join(zip_processor.ZIP_STORAGE_DIR, p, party_code, category, safe_file)
-    if os.path.exists(target_path):
+    target_path = zip_processor.ensure_file_on_disk(p, party_code, category, safe_file)
+    if target_path and os.path.exists(target_path):
         return send_file(target_path, as_attachment=True, download_name=safe_file)
-    return jsonify({'error': 'File not found in zip storage'}), 404
+    return jsonify({'error': 'File not found in zip storage or Google Drive'}), 404
 
 @app.route('/api/zip/download_party_bundle/<platform>/<party_code>', methods=['GET'])
 def download_party_bundle_zip(platform, party_code):
@@ -743,6 +743,11 @@ def clear_zip_storage_route():
         'success': True, 
         'message': f"Cleared ZIP storage for {platform if platform else 'ALL platforms'} safely (backup preserved)."
     })
+
+@app.route('/api/zip/sync_drive', methods=['GET', 'POST'])
+def sync_zip_drive():
+    res = zip_processor.sync_all_from_drive()
+    return jsonify(res)
 
 # ==========================================
 # 📊 TAX REPORT API ENDPOINTS (AJIO, MYNTRA, FLIPKART)
