@@ -185,6 +185,26 @@ def sync_clear_storage_on_drive(platform=None):
         print(f"Error clearing ZIP storage on Google Drive: {e}")
         return None
 
+def sync_delete_party_on_drive(platform, party_code):
+    """
+    Deletes a specific party's files on Google Drive
+    """
+    cfg = get_drive_config()
+    if not cfg.get('enabled') or not cfg.get('gas_url'):
+        return None
+    try:
+        payload = {
+            'action': 'zip_delete_party',
+            'platform': platform,
+            'party_code': party_code,
+            'root_folder_id': cfg.get('folder_id')
+        }
+        res = requests.post(cfg['gas_url'], json=payload, timeout=20)
+        return res.json()
+    except Exception as e:
+        print(f"Error deleting party {party_code} on Google Drive: {e}")
+        return None
+
 def trigger_drive_zip_cleanup():
     """
     Triggers Google Drive 9-hour expired zip cleanup via GAS
@@ -1044,9 +1064,38 @@ def clear_zip_storage_data(platform=None):
         save_registry(registry)
 
     # Clear Google Drive persistent storage as well
-    sync_clear_storage_on_drive(platform)
+    drive_res = sync_clear_storage_on_drive(platform)
         
-    return True
+    return {
+        'success': True,
+        'platform': platform if platform and str(platform).strip().upper() != 'ALL' else 'ALL',
+        'drive_response': drive_res
+    }
+
+def delete_party_zip_data(platform, party_code):
+    """
+    Deletes all files and folders for a specific party locally and on Google Drive
+    """
+    init_zip_storage()
+    p = normalize_platform(platform)
+    party_code = str(party_code).strip()
+    
+    party_dir = os.path.join(ZIP_STORAGE_DIR, p, party_code)
+    if os.path.exists(party_dir):
+        safe_rmtree(party_dir)
+        
+    registry = load_registry()
+    if p in registry.get('platforms', {}) and party_code in registry['platforms'][p].get('parties', {}):
+        del registry['platforms'][p]['parties'][party_code]
+        save_registry(registry)
+        
+    drive_res = sync_delete_party_on_drive(p, party_code)
+    return {
+        'success': True,
+        'platform': p,
+        'party_code': party_code,
+        'drive_response': drive_res
+    }
 
 def clean_expired_zip_data(expiry_hours=None, force=False):
     """

@@ -738,10 +738,29 @@ def cleanup_expired_zip_route():
 def clear_zip_storage_route():
     payload = request.get_json() or {}
     platform = payload.get('platform')
-    zip_processor.clear_zip_storage_data(platform)
+    res = zip_processor.clear_zip_storage_data(platform)
+    plat_str = platform if platform and str(platform).strip().upper() != 'ALL' else 'ALL platforms'
+    drive_info = ""
+    if isinstance(res, dict) and res.get('drive_response') and isinstance(res['drive_response'], dict):
+        drive_info = f" ({res['drive_response'].get('message', 'Google Drive synced')})"
     return jsonify({
         'success': True, 
-        'message': f"Cleared ZIP storage for {platform if platform else 'ALL platforms'} safely (backup preserved)."
+        'message': f"Cleared ZIP storage for {plat_str} locally and on Google Drive{drive_info}.",
+        'details': res
+    })
+
+@app.route('/api/zip/delete_party', methods=['POST'])
+def delete_party_zip_route():
+    payload = request.get_json() or {}
+    platform = payload.get('platform', 'AJIO')
+    party_code = payload.get('party_code')
+    if not party_code:
+        return jsonify({'success': False, 'error': 'party_code is required'}), 400
+    res = zip_processor.delete_party_zip_data(platform, party_code)
+    return jsonify({
+        'success': True,
+        'message': f"Party {party_code} ({platform}) deleted locally and on Google Drive.",
+        'details': res
     })
 
 @app.route('/api/zip/sync_drive', methods=['GET', 'POST'])

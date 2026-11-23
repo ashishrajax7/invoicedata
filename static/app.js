@@ -2155,9 +2155,14 @@ function renderZipRegistryTable() {
                 <td class="py-2.5 px-4 text-center">${detailsCell}</td>
                 <td class="py-2.5 px-4 text-center">${summaryCell}</td>
                 <td class="py-2.5 px-4 text-center">
-                    <a href="/api/zip/download_party_bundle/${p.platform}/${p.party_code}" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition active:scale-95 shadow-2xs" title="Download all available files for ${p.party_code} (${p.platform}) as zip">
-                        <i class="fa-solid fa-file-zipper text-xs"></i> Bundle
-                    </a>
+                    <div class="inline-flex items-center gap-1.5">
+                        <a href="/api/zip/download_party_bundle/${p.platform}/${p.party_code}" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition active:scale-95 shadow-2xs" title="Download all available files for ${p.party_code} (${p.platform}) as zip">
+                            <i class="fa-solid fa-file-zipper text-xs"></i> Bundle
+                        </a>
+                        <button onclick="deleteSinglePartyZip('${p.platform}', '${p.party_code}')" class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg border border-transparent hover:border-rose-200 transition active:scale-90" title="Delete ${p.party_code} files locally & from Google Drive">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -2171,16 +2176,16 @@ async function clearZipPlatformData() {
     const platLabel = isAll ? 'ALL Platforms' : zipActivePlatform;
     const confirmed = await showCustomConfirm({
         title: `Clear ${platLabel} ZIP Storage?`,
-        message: `This will remove all uploaded ZIP files, extracted files, 2 More Invoices, Details, and Summary sheets for ${platLabel}.\n\n🛡️ A full backup is automatically created.`,
+        message: `This will permanently remove stored files for ${platLabel} locally AND from Google Drive.\n\n🛡️ A safety backup of your files is automatically preserved on the server.`,
         icon: 'fa-trash-can',
         iconColor: 'text-rose-600',
         iconBg: 'bg-rose-100',
-        confirmText: `Clear ${platLabel} ZIPs`,
+        confirmText: `Clear ${platLabel} (Drive + Local)`,
         confirmBtnClass: 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30'
     });
     if (!confirmed) return;
 
-    showToast(`Clearing ${platLabel} ZIP storage...`, 'info');
+    showToast(`Clearing ${platLabel} ZIP storage locally & on Google Drive...`, 'info');
 
     try {
         const res = await fetch('/api/zip/clear', {
@@ -2190,12 +2195,82 @@ async function clearZipPlatformData() {
         });
         const result = await res.json();
         if (result.success) {
-            showToast(result.message || 'ZIP storage cleared!', 'success');
+            showToast(result.message || 'ZIP storage cleared locally and on Google Drive!', 'success');
             await loadZipStatus(false);
             selectPartyForPipeline('');
+        } else {
+            showToast(result.error || 'Failed to clear ZIP storage', 'error');
         }
     } catch (e) {
         showToast('Error clearing ZIP storage', 'error');
+    }
+}
+
+async function clearAllZipStorageData() {
+    const confirmed = await showCustomConfirm({
+        title: 'Delete ALL ZIPs & Wipe Google Drive Storage?',
+        message: 'This will completely wipe all uploaded ZIP files across AJIO, Myntra, and Flipkart, and trash the ZIP_STORAGE folder completely from Google Drive.\n\n🛡️ A safety backup is saved before deletion.',
+        icon: 'fa-dumpster-fire',
+        iconColor: 'text-rose-600',
+        iconBg: 'bg-rose-100',
+        confirmText: 'Yes, Delete All From Drive',
+        confirmBtnClass: 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30'
+    });
+    if (!confirmed) return;
+
+    showToast('Deleting all ZIP storage locally & from Google Drive...', 'info');
+
+    try {
+        const res = await fetch('/api/zip/clear', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ platform: 'ALL' })
+        });
+        const result = await res.json();
+        if (result.success) {
+            showToast(result.message || 'All ZIP storage deleted locally and from Google Drive!', 'success');
+            await loadZipStatus(false);
+            selectPartyForPipeline('');
+        } else {
+            showToast(result.error || 'Failed to delete ZIP storage', 'error');
+        }
+    } catch (e) {
+        showToast('Error deleting ZIP storage', 'error');
+    }
+}
+
+async function deleteSinglePartyZip(platform, partyCode) {
+    const confirmed = await showCustomConfirm({
+        title: `Delete Party ${partyCode}?`,
+        message: `Are you sure you want to delete all files for party "${partyCode}" (${platform})?\n\nThis will remove them locally AND delete the folder from Google Drive.`,
+        icon: 'fa-trash-can',
+        iconColor: 'text-rose-600',
+        iconBg: 'bg-rose-100',
+        confirmText: `Delete ${partyCode}`,
+        confirmBtnClass: 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30'
+    });
+    if (!confirmed) return;
+
+    showToast(`Deleting ${partyCode} locally & from Google Drive...`, 'info');
+
+    try {
+        const res = await fetch('/api/zip/delete_party', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ platform: platform, party_code: partyCode })
+        });
+        const result = await res.json();
+        if (result.success) {
+            showToast(`Deleted ${partyCode} successfully from local & Google Drive!`, 'success');
+            await loadZipStatus(false);
+            if (activeSelectedParty === partyCode) {
+                selectPartyForPipeline('');
+            }
+        } else {
+            showToast(result.error || 'Failed to delete party', 'error');
+        }
+    } catch (e) {
+        showToast('Error deleting party files', 'error');
     }
 }
 

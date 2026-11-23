@@ -307,24 +307,94 @@ function doPost(e) {
     }
 
     if (action === 'zip_clear_storage') {
-      var platform = data.platform;
+      var platform = (data.platform || 'ALL').toString().trim().toUpperCase();
+
+      // If ALL: Find and trash ALL ZIP_STORAGE folders directly in rootFolder (deletes duplicates too!)
+      if (!platform || platform === 'ALL') {
+        var allZipFolders = rootFolder.getFoldersByName('ZIP_STORAGE');
+        var trashedCount = 0;
+        while (allZipFolders.hasNext()) {
+          try {
+            allZipFolders.next().setTrashed(true);
+            trashedCount++;
+          } catch(e) {}
+        }
+        return jsonResponse({
+          success: true,
+          message: 'ZIP_STORAGE (' + trashedCount + ' folders) deleted from Google Drive'
+        });
+      }
+
+      // If specific platform (e.g. 'AJIO', 'MYNTRA', 'FLIPKART'):
       var zipStorageFolder = getOrCreateZipStorageFolder(rootFolder);
-      if (platform && platform.toUpperCase() !== 'ALL') {
-        var pFolders = zipStorageFolder.getFoldersByName(capitalizePlatform(platform));
-        while (pFolders.hasNext()) {
-          pFolders.next().setTrashed(true);
-        }
-      } else {
-        var allP = zipStorageFolder.getFolders();
-        while (allP.hasNext()) {
-          allP.next().setTrashed(true);
-        }
-        var allF = zipStorageFolder.getFiles();
-        while (allF.hasNext()) {
-          allF.next().setTrashed(true);
+
+      // Trash any platform folder matching case-insensitively (e.g. 'Myntra', 'MYNTRA', 'myntra')
+      var subFolders = zipStorageFolder.getFolders();
+      var trashedSub = 0;
+      while (subFolders.hasNext()) {
+        var sf = subFolders.next();
+        if (sf.getName().toUpperCase() === platform) {
+          try {
+            sf.setTrashed(true);
+            trashedSub++;
+          } catch(e) {}
         }
       }
-      return jsonResponse({ success: true, message: 'ZIP storage cleared on Google Drive' });
+
+      // Also clean platform entry in registry.json on Drive
+      var regFiles = zipStorageFolder.getFilesByName('registry.json');
+      if (regFiles.hasNext()) {
+        var rf = regFiles.next();
+        try {
+          var reg = JSON.parse(rf.getBlob().getDataAsString());
+          if (reg && reg.platforms && reg.platforms[platform]) {
+            reg.platforms[platform] = { parties: {}, stats: { order_zips: 0, details_zips: 0, summary_zips: 0 } };
+            rf.setContent(JSON.stringify(reg, null, 2));
+          }
+        } catch(e) {}
+      }
+
+      return jsonResponse({
+        success: true,
+        message: 'Platform ' + platform + ' deleted from Google Drive ZIP storage'
+      });
+    }
+
+    if (action === 'zip_delete_party') {
+      var platform = (data.platform || 'AJIO').toString().trim().toUpperCase();
+      var partyCode = String(data.party_code || '').trim();
+      var zipStorageFolder = getOrCreateZipStorageFolder(rootFolder);
+      var pFolders = zipStorageFolder.getFolders();
+      var deleted = false;
+      while (pFolders.hasNext()) {
+        var pf = pFolders.next();
+        if (pf.getName().toUpperCase() === platform) {
+          var partyIter = pf.getFoldersByName(partyCode);
+          while (partyIter.hasNext()) {
+            try {
+              partyIter.next().setTrashed(true);
+              deleted = true;
+            } catch(e) {}
+          }
+        }
+      }
+      var regFiles = zipStorageFolder.getFilesByName('registry.json');
+      if (regFiles.hasNext()) {
+        var rf = regFiles.next();
+        try {
+          var reg = JSON.parse(rf.getBlob().getDataAsString());
+          if (reg && reg.platforms && reg.platforms[platform] && reg.platforms[platform].parties) {
+            delete reg.platforms[platform].parties[partyCode];
+            rf.setContent(JSON.stringify(reg, null, 2));
+          }
+        } catch(e) {}
+      }
+      return jsonResponse({
+        success: true,
+        deleted: deleted,
+        party_code: partyCode,
+        message: 'Party ' + partyCode + ' deleted from Google Drive'
+      });
     }
 
     if (action === 'cleanup_expired_zip' || action === 'force_cleanup') {

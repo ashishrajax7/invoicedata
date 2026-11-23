@@ -1215,9 +1215,13 @@
                         <button onclick="loadZipStatus(true)" class="p-2 bg-white hover:bg-slate-50 text-slate-600 rounded-lg text-xs transition border border-slate-200 shadow-2xs" title="Refresh ZIP Status">
                             <i class="fa-solid fa-rotate text-xs"></i>
                         </button>
-                        <button onclick="clearZipPlatformData()" class="flex items-center space-x-1.5 bg-white hover:bg-rose-50 text-rose-700 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-2xs">
+                        <button onclick="clearZipPlatformData()" class="flex items-center space-x-1.5 bg-white hover:bg-rose-50 text-rose-700 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-2xs" title="Clear selected platform files locally and on Google Drive">
                             <i class="fa-solid fa-trash-can text-xs text-rose-600"></i>
-                            <span>Clear Platform ZIPs</span>
+                            <span id="clearZipPlatformBtnText">Clear Platform ZIPs</span>
+                        </button>
+                        <button onclick="clearAllZipStorageData()" class="flex items-center space-x-1.5 bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-2xs" title="Delete ALL ZIP storage files locally & completely from Google Drive">
+                            <i class="fa-solid fa-trash-arrow-up text-xs"></i>
+                            <span>Delete All ZIPs (Drive)</span>
                         </button>
                     </div>
                 </div>
