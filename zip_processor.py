@@ -416,11 +416,15 @@ def process_order_zip(platform, extract_dir, original_zip_name=''):
 
     for party_code, pfiles in extracted_parties.items():
         party_storage_dir = os.path.join(ZIP_STORAGE_DIR, platform, party_code)
-        target_subfolder_name = 'od'
-        order_dir = os.path.join(party_storage_dir, target_subfolder_name)
+        # Always create all 4 standard subfolders: od, details, summary, two_more_invoice
+        order_dir = os.path.join(party_storage_dir, 'od')
         two_more_dir = os.path.join(party_storage_dir, 'two_more_invoice')
+        details_dir = os.path.join(party_storage_dir, 'details')
+        summary_dir = os.path.join(party_storage_dir, 'summary')
         os.makedirs(order_dir, exist_ok=True)
         os.makedirs(two_more_dir, exist_ok=True)
+        os.makedirs(details_dir, exist_ok=True)
+        os.makedirs(summary_dir, exist_ok=True)
 
         now = datetime.now()
         now_iso = now.isoformat()
@@ -565,8 +569,10 @@ def process_details_or_summary_zip(platform, zip_type, extract_dir, original_zip
 
             party_code = str(party_code).strip()
             party_storage_dir = os.path.join(ZIP_STORAGE_DIR, platform, party_code)
+            # Always ensure all 4 standard folders exist
+            for sub in ['od', 'details', 'summary', 'two_more_invoice']:
+                os.makedirs(os.path.join(party_storage_dir, sub), exist_ok=True)
             target_subfolder = os.path.join(party_storage_dir, zip_type)
-            os.makedirs(target_subfolder, exist_ok=True)
             
             target_dst = os.path.join(target_subfolder, fname)
             shutil.copy2(file_path, target_dst)

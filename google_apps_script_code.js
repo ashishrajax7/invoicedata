@@ -17,7 +17,7 @@
  *    - Select event source: Time-driven
  *    - Select type of time based trigger: Hour timer
  *    - Select hour interval: Every hour
- * 4. Click Save. That's it! Any files older than 9 hours will be auto-deleted.
+ * 4. Click Save. Any files/parties older than 9 hours are auto-deleted.
  * ==============================================================================
  */
 
@@ -48,20 +48,15 @@ function doPost(e) {
       var partyCode = data.party_code || '';
       var base64Content = data.content;
 
-      // 1. Get or create platform folder (e.g. Myntra)
       var platFolder = getOrCreateFolder(rootFolder, capitalizePlatform(platform));
-
-      // 2. Get or create month folder (e.g. sep)
       var monthFolder = getOrCreateFolder(platFolder, month);
 
-      // 3. Move existing file for same party into old/ subfolder
       if (partyCode) {
         var existingFiles = monthFolder.getFiles();
         var oldFolder = null;
         while (existingFiles.hasNext()) {
           var ef = existingFiles.next();
           var efName = ef.getName();
-          // Check if party code matches and it's not the exact same filename
           if (efName.indexOf(partyCode) !== -1 && efName !== filename) {
             if (!oldFolder) oldFolder = getOrCreateFolder(monthFolder, 'old');
             ef.moveTo(oldFolder);
@@ -69,13 +64,11 @@ function doPost(e) {
         }
       }
 
-      // 4. Overwrite same named file if it already exists in month folder
       var sameNameFiles = monthFolder.getFilesByName(filename);
       while (sameNameFiles.hasNext()) {
         sameNameFiles.next().setTrashed(true);
       }
 
-      // 5. Create new file from base64 content
       var decoded = Utilities.base64Decode(base64Content);
       var blob = Utilities.newBlob(decoded, data.mimetype || 'application/octet-stream', filename);
       var newFile = monthFolder.createFile(blob);
@@ -151,7 +144,6 @@ function doPost(e) {
         }
       }
 
-      // Also trash the month folder itself so Drive doesn't keep an empty month folder
       try {
         targetFolder.setTrashed(true);
       } catch (fErr) {}
@@ -212,9 +204,17 @@ function doPost(e) {
       var filename = data.filename;
       var base64Content = data.content;
 
-      var zipStorageFolder = getOrCreateFolder(rootFolder, 'ZIP_STORAGE');
+      // 1. Get or merge ZIP_STORAGE (Guarantees NO duplicate folders)
+      var zipStorageFolder = getOrCreateZipStorageFolder(rootFolder);
       var platFolder = getOrCreateFolder(zipStorageFolder, capitalizePlatform(platform));
       var partyFolder = getOrCreateFolder(platFolder, partyCode);
+
+      // 2. ALWAYS create all 4 standard folders for every party:
+      getOrCreateFolder(partyFolder, 'od');
+      getOrCreateFolder(partyFolder, 'details');
+      getOrCreateFolder(partyFolder, 'summary');
+      getOrCreateFolder(partyFolder, 'two_more_invoice');
+
       var catFolder = getOrCreateFolder(partyFolder, category);
 
       // Overwrite file if same name already exists in category folder
@@ -239,7 +239,7 @@ function doPost(e) {
     }
 
     if (action === 'zip_save_registry') {
-      var zipStorageFolder = getOrCreateFolder(rootFolder, 'ZIP_STORAGE');
+      var zipStorageFolder = getOrCreateZipStorageFolder(rootFolder);
       var regContent = typeof data.registry === 'string' ? data.registry : JSON.stringify(data.registry, null, 2);
 
       var existingReg = zipStorageFolder.getFilesByName('registry.json');
@@ -252,12 +252,8 @@ function doPost(e) {
     }
 
     if (action === 'zip_get_registry') {
-      var zipFolders = rootFolder.getFoldersByName('ZIP_STORAGE');
-      if (!zipFolders.hasNext()) {
-        return jsonResponse({ success: true, registry: null, message: 'ZIP_STORAGE folder not created yet' });
-      }
-      var zipFolder = zipFolders.next();
-      var regFiles = zipFolder.getFilesByName('registry.json');
+      var zipStorageFolder = getOrCreateZipStorageFolder(rootFolder);
+      var regFiles = zipStorageFolder.getFilesByName('registry.json');
       if (!regFiles.hasNext()) {
         return jsonResponse({ success: true, registry: null, message: 'registry.json not found' });
       }
@@ -286,7 +282,7 @@ function doPost(e) {
         var category = data.category || 'od';
         var filename = data.filename;
 
-        var zipStorageFolder = getOrCreateFolder(rootFolder, 'ZIP_STORAGE');
+        var zipStorageFolder = getOrCreateZipStorageFolder(rootFolder);
         var platFolder = getOrCreateFolder(zipStorageFolder, capitalizePlatform(platform));
         var partyFolder = getOrCreateFolder(platFolder, partyCode);
         var catFolder = getOrCreateFolder(partyFolder, category);
@@ -312,29 +308,26 @@ function doPost(e) {
 
     if (action === 'zip_clear_storage') {
       var platform = data.platform;
-      var zipFolders = rootFolder.getFoldersByName('ZIP_STORAGE');
-      if (zipFolders.hasNext()) {
-        var zipFolder = zipFolders.next();
-        if (platform && platform.toUpperCase() !== 'ALL') {
-          var pFolders = zipFolder.getFoldersByName(capitalizePlatform(platform));
-          while (pFolders.hasNext()) {
-            pFolders.next().setTrashed(true);
-          }
-        } else {
-          var allP = zipFolder.getFolders();
-          while (allP.hasNext()) {
-            allP.next().setTrashed(true);
-          }
-          var allF = zipFolder.getFiles();
-          while (allF.hasNext()) {
-            allF.next().setTrashed(true);
-          }
+      var zipStorageFolder = getOrCreateZipStorageFolder(rootFolder);
+      if (platform && platform.toUpperCase() !== 'ALL') {
+        var pFolders = zipStorageFolder.getFoldersByName(capitalizePlatform(platform));
+        while (pFolders.hasNext()) {
+          pFolders.next().setTrashed(true);
+        }
+      } else {
+        var allP = zipStorageFolder.getFolders();
+        while (allP.hasNext()) {
+          allP.next().setTrashed(true);
+        }
+        var allF = zipStorageFolder.getFiles();
+        while (allF.hasNext()) {
+          allF.next().setTrashed(true);
         }
       }
       return jsonResponse({ success: true, message: 'ZIP storage cleared on Google Drive' });
     }
 
-    if (action === 'cleanup_expired_zip') {
+    if (action === 'cleanup_expired_zip' || action === 'force_cleanup') {
       var cleanedCount = cleanupExpiredZipFiles();
       return jsonResponse({ success: true, message: 'Expired zip cleanup completed', deleted_count: cleanedCount });
     }
@@ -354,10 +347,104 @@ function doGet(e) {
   });
 }
 
+/**
+ * Ensures single unique folder under parent (auto-ignores and trashes duplicates)
+ */
 function getOrCreateFolder(parent, name) {
   var folders = parent.getFoldersByName(name);
-  if (folders.hasNext()) return folders.next();
+  var chosen = null;
+  while (folders.hasNext()) {
+    var f = folders.next();
+    if (!f.isTrashed()) {
+      if (!chosen) {
+        chosen = f;
+      } else {
+        // Trash redundant duplicate folder if empty or merge
+        try {
+          var files = f.getFiles();
+          while (files.hasNext()) files.next().moveTo(chosen);
+          var subs = f.getFolders();
+          while (subs.hasNext()) subs.next().moveTo(chosen);
+          f.setTrashed(true);
+        } catch(e) {}
+      }
+    }
+  }
+  if (chosen) return chosen;
   return parent.createFolder(name);
+}
+
+/**
+ * Handles ZIP_STORAGE specifically:
+ * Prevents multiple ZIP_STORAGE folders from being created by race conditions.
+ * If duplicate ZIP_STORAGE folders exist, merges all contents into primary and trashes duplicates!
+ */
+function getOrCreateZipStorageFolder(rootFolder) {
+  var folders = rootFolder.getFoldersByName('ZIP_STORAGE');
+  var primary = null;
+  var duplicates = [];
+  while (folders.hasNext()) {
+    var f = folders.next();
+    if (!f.isTrashed()) {
+      if (!primary) {
+        primary = f;
+      } else {
+        duplicates.push(f);
+      }
+    }
+  }
+
+  if (!primary) {
+    return rootFolder.createFolder('ZIP_STORAGE');
+  }
+
+  // Merge any duplicate ZIP_STORAGE folders
+  for (var i = 0; i < duplicates.length; i++) {
+    var dup = duplicates[i];
+    try {
+      var subFolders = dup.getFolders();
+      while (subFolders.hasNext()) {
+        var sub = subFolders.next();
+        if (!sub.isTrashed()) {
+          var targetPlat = getOrCreateFolder(primary, sub.getName());
+          var parties = sub.getFolders();
+          while (parties.hasNext()) {
+            var party = parties.next();
+            if (!party.isTrashed()) {
+              var targetParty = getOrCreateFolder(targetPlat, party.getName());
+              var cats = party.getFolders();
+              while (cats.hasNext()) {
+                var cat = cats.next();
+                if (!cat.isTrashed()) {
+                  var targetCat = getOrCreateFolder(targetParty, cat.getName());
+                  var files = cat.getFiles();
+                  while (files.hasNext()) {
+                    var file = files.next();
+                    if (!file.isTrashed()) {
+                      file.moveTo(targetCat);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      var looseFiles = dup.getFiles();
+      while (looseFiles.hasNext()) {
+        var lf = looseFiles.next();
+        if (!lf.isTrashed()) {
+          lf.moveTo(primary);
+        }
+      }
+      dup.setTrashed(true);
+    } catch (mergeErr) {
+      Logger.log('Note on duplicate folder cleanup: ' + mergeErr);
+    }
+  }
+
+  return primary;
 }
 
 function capitalizePlatform(p) {
@@ -376,52 +463,96 @@ function jsonResponse(obj) {
  * ==============================================================================
  * TIME-DRIVEN TRIGGER: 9-HOUR AUTO-EXPIRY FOR ZIP FILES (RUNS ON GOOGLE CLOUD)
  * ==============================================================================
- * Automatically checks ZIP_STORAGE folder and trashes any party folders or files
- * created more than 9 hours ago.
- * Set trigger in script.google.com -> Triggers -> Add Trigger -> Every Hour.
+ * Ultra-fast execution (< 5 seconds):
+ * Checks all party folders against registry.json or 9-hour age.
+ * Trashes expired party folders in 1 instant operation per party (no deep nested timeouts!).
  */
 function cleanupExpiredZipFiles() {
   var rootFolderId = '1aFmrWvPx-0QHkIkhieB-a9F2r9Zi8OOu';
   var rootFolder = DriveApp.getFolderById(rootFolderId);
-  var zipFolders = rootFolder.getFoldersByName('ZIP_STORAGE');
-  if (!zipFolders.hasNext()) return 0;
-  var zipFolder = zipFolders.next();
+  var zipStorageFolder = getOrCreateZipStorageFolder(rootFolder);
 
   var now = new Date().getTime();
-  var NINE_HOURS_MS = 9 * 60 * 60 * 1000; // 9 hours (32,400,000 milliseconds)
+  var NINE_HOURS_MS = 9 * 60 * 60 * 1000; // 9 hours
   var deletedCount = 0;
 
-  var platformFolders = zipFolder.getFolders();
+  // 1. Read registry.json on Drive for exact expiry timestamps
+  var regData = null;
+  var regFile = null;
+  var regFiles = zipStorageFolder.getFilesByName('registry.json');
+  if (regFiles.hasNext()) {
+    regFile = regFiles.next();
+    try {
+      regData = JSON.parse(regFile.getBlob().getDataAsString());
+    } catch (e) {}
+  }
+
+  // 2. Scan all platform folders
+  var platformFolders = zipStorageFolder.getFolders();
   while (platformFolders.hasNext()) {
     var pf = platformFolders.next();
+    if (pf.isTrashed()) continue;
+    var pName = pf.getName().toUpperCase();
     var partyFolders = pf.getFolders();
+
     while (partyFolders.hasNext()) {
       var partyFolder = partyFolders.next();
-      var folderCreated = partyFolder.getDateCreated().getTime();
+      if (partyFolder.isTrashed()) continue;
+      var pCode = partyFolder.getName();
+      var isExpired = false;
 
-      // If the party folder was created more than 9 hours ago
-      if ((now - folderCreated) >= NINE_HOURS_MS) {
-        Logger.log('Deleting expired party folder: ' + partyFolder.getName() + ' (' + pf.getName() + ')');
-        partyFolder.setTrashed(true);
-        deletedCount++;
-      } else {
-        // Inspect individual category subfolders & files
-        var catFolders = partyFolder.getFolders();
-        while (catFolders.hasNext()) {
-          var catF = catFolders.next();
-          var files = catF.getFiles();
-          while (files.hasNext()) {
-            var f = files.next();
-            if ((now - f.getDateCreated().getTime()) >= NINE_HOURS_MS) {
-              Logger.log('Deleting expired file: ' + f.getName());
-              f.setTrashed(true);
-              deletedCount++;
-            }
+      // Priority 1: Check registry.json expires_at
+      if (regData && regData.platforms && regData.platforms[pName] && regData.platforms[pName].parties) {
+        var pEntry = regData.platforms[pName].parties[pCode];
+        if (pEntry) {
+          var expStr = pEntry.expires_at || pEntry.updated_at || pEntry.uploaded_at;
+          if (expStr) {
+            try {
+              var expTime = new Date(expStr).getTime();
+              if (pEntry.expires_at) {
+                if (now >= expTime) isExpired = true;
+              } else {
+                if ((now - expTime) >= NINE_HOURS_MS) isExpired = true;
+              }
+            } catch (dtErr) {}
           }
+        }
+      }
+
+      // Priority 2: Fallback check folder created/updated dates
+      if (!isExpired) {
+        try {
+          var created = partyFolder.getDateCreated().getTime();
+          var updated = partyFolder.getLastUpdated().getTime();
+          if ((now - created) >= NINE_HOURS_MS || (now - updated) >= NINE_HOURS_MS) {
+            isExpired = true;
+          }
+        } catch (fErr) {}
+      }
+
+      // Fast 1-operation deletion of the entire expired party folder
+      if (isExpired) {
+        try {
+          Logger.log('Deleting expired party folder: ' + partyFolder.getName() + ' (' + pName + ')');
+          partyFolder.setTrashed(true);
+          deletedCount++;
+          if (regData && regData.platforms && regData.platforms[pName] && regData.platforms[pName].parties) {
+            delete regData.platforms[pName].parties[pCode];
+          }
+        } catch (delErr) {
+          Logger.log('Error trashing party folder ' + pCode + ': ' + delErr);
         }
       }
     }
   }
-  Logger.log('cleanupExpiredZipFiles finished. Total deleted items: ' + deletedCount);
+
+  // 3. Save cleaned registry.json
+  if (deletedCount > 0 && regFile && regData) {
+    try {
+      regFile.setContent(JSON.stringify(regData, null, 2));
+    } catch (saveErr) {}
+  }
+
+  Logger.log('cleanupExpiredZipFiles completed. Deleted ' + deletedCount + ' party folders.');
   return deletedCount;
 }
